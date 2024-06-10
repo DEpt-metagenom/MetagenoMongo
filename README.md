@@ -1,3 +1,5 @@
+![metagenomongo.png](images/metagenomongo.png)
+
 # MetagenoMongo
 
 MetagenoMongo is an automated data error correction tool. It aims to ensure data accuracy and integrity by automating the detection and correction of common errors found in datasets sourced from multiple origins. Additionally, MetagenoMongo offers functionalities for adding, updating, or deleting data, making it capable of creating and managing datasets. Moreover, the tool includes a template generation function for users who prefer alternative editors like Excel, providing correct column names.
