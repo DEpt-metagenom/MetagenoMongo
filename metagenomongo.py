@@ -237,7 +237,10 @@ while True:
                     sheet = workbook.active
                     header_row = [cell.value for cell in sheet[1]]
                     for row in sheet.iter_rows(min_row=2, values_only=True):
-                        temp_data.append(list(row))
+                        if any(cell for cell in row):
+                            temp_data.append(list(row))
+                        else:
+                            break
 
                 missing_headers = [header for header in header_row if header not in headers and header is not None]
                 if missing_headers:
