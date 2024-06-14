@@ -5,33 +5,31 @@ import difflib
 import openpyxl
 import re
 import PySimpleGUI as sg
+import pandas as pd
 
 # Function to read headers from a CSV file
 def load_headers(filename):
     if not os.path.exists(filename):
         sg.popup_error(f"File {filename} not found!")
         return []
-    with open(filename, 'r') as file:
-        reader = csv.reader(file)
-        headers = [row[0] for row in reader if not row[0].startswith("#")]
-    return headers[1:]  # Skip the first non-header line
+    df = pd.read_csv(filename, comment='#', header=None)
+    headers = df.iloc[:, 0].tolist()[1:]  # Skip the first non-header line
+    return headers
 
 # Function to load options from the CSV file
 def load_options(filename):
     if not os.path.exists(filename):
         sg.popup_error(f"File {filename} not found!")
         return {}
-    with open(filename, 'r') as file:
-        reader = csv.reader(file)
-        next(reader)  # Skip the first row
-        options = {}
-        for row in reader:
-            header = row[0]
-            options[header] = {
-                'type': row[1],
-                'options': row[2].split(',') if row[2] else [],
-                'combobox_type': row[3] if len(row) > 3 else ''
-            }
+    df = pd.read_csv(filename, header=None)
+    options = {}
+    for _, row in df.iterrows():
+        header = row[0]
+        options[header] = {
+            'type': row[1],
+            'options': str(row[2]).split(',') if pd.notna(row[2]) else [],
+            'combobox_type': row[3] if len(row) > 3 and pd.notna(row[3]) else ''
+        }
     return options
 
 # Get the directory of the script
@@ -146,9 +144,8 @@ while True:
     elif event == '-TEMPLATE-':
         filename = sg.popup_get_file('Save Template As', save_as=True, file_types=(("CSV Files", "*.csv"),), keep_on_top=True)
         if filename:
-            with open(filename, 'w', newline='') as csvfile:
-                writer = csv.writer(csvfile)
-                writer.writerow(headers)
+            df = pd.DataFrame(columns=headers)
+            df.to_csv(filename, index=False)
     
     elif event == '-CORRECT-':
         corrected_count = 0
@@ -180,7 +177,7 @@ while True:
                             corrected_count += 1
                             corrected_items.append(f'Row {row_index + 1}, Column {col_index + 1}: {cell} -> {corrected_cell}')
                             correction_applied = True
-                    elif isinstance(cell, datetime.datetime):  # Handle datetime objects separately
+                    elif isinstance(cell, datetime):  # Handle datetime objects separately
                         corrected_cell = cell.strftime('%Y-%m-%d %H:%M:%S')  # Convert datetime to string
                         if corrected_cell != cell:
                             data[row_index][col_index] = corrected_cell
@@ -228,20 +225,13 @@ while True:
                 window['-TABLE-'].update(values=[])
                 temp_data = []
                 if filename.endswith('.csv'):
-                    with open(filename, 'r', newline='', encoding='utf-8') as file:
-                        reader = csv.reader(file)
-                        header_row = next(reader)
-                        for row in reader:
-                            temp_data.append(list(row))
+                    df = pd.read_csv(filename)
+                    header_row = list(df.columns)
+                    temp_data = df.values.tolist()
                 else:
-                    workbook = openpyxl.load_workbook(filename)
-                    sheet = workbook.active
-                    header_row = [cell.value for cell in sheet[1]]
-                    for row in sheet.iter_rows(min_row=2, values_only=True):
-                        if any(cell for cell in row):
-                            temp_data.append(list(row))
-                        else:
-                            break
+                    df = pd.read_excel(filename)
+                    header_row = list(df.columns)
+                    temp_data = df.values.tolist()
 
                 missing_headers = [header for header in header_row if header not in headers and header is not None]
                 if missing_headers:
@@ -263,23 +253,21 @@ while True:
                                 if closest_match:
                                     selected_header = header_mapping.get(closest_match[0], closest_match[0])
                                     header_index = header_row.index(closest_match[0])
-                                    cell_value = row[header_index]
+                                    cell_value = str(row[header_index])
                                     if cell_value.strip():
                                         new_row[headers.index(selected_header)] = cell_value
                             data.append(new_row)
                 else:
                     for row in temp_data:
-                        data.append([row[header_row.index(header)] if header in header_row else '' for header in headers])
+                        data.append([str(row[header_row.index(header)]) if header in header_row else '' for header in headers])
 
                 window['-TABLE-'].update(values=data)
 
     elif event == '-SAVE-':
         filename = sg.popup_get_file('Save File', save_as=True, file_types=(("CSV Files", "*.csv"),), keep_on_top=True)
         if filename:
-            with open(filename, 'w', newline='', encoding='utf-8') as file:
-                writer = csv.writer(file)
-                writer.writerow(headers)
-                writer.writerows(data)
+            df = pd.DataFrame(data, columns=headers)
+            df.to_csv(filename, index=False)
 
     elif event == '-CLEAR-':
         for header in headers:
