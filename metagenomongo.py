@@ -13,6 +13,7 @@ def load_headers(filename):
         sg.popup_error(f"File {filename} not found!")
         return []
     df = pd.read_csv(filename, comment='#', header=None)
+    df = df.fillna('')
     headers = df.iloc[:, 0].tolist()[1:]  # Skip the first non-header line
     return headers
 
@@ -22,6 +23,7 @@ def load_options(filename):
         sg.popup_error(f"File {filename} not found!")
         return {}
     df = pd.read_csv(filename, header=None)
+    df = df.fillna('')
     options = {}
     for _, row in df.iterrows():
         header = row[0]
@@ -226,10 +228,12 @@ while True:
                 temp_data = []
                 if filename.endswith('.csv'):
                     df = pd.read_csv(filename)
+                    df = df.fillna('')
                     header_row = list(df.columns)
                     temp_data = df.values.tolist()
                 else:
                     df = pd.read_excel(filename)
+                    df = df.fillna('')
                     header_row = list(df.columns)
                     temp_data = df.values.tolist()
 
