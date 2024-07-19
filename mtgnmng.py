@@ -286,6 +286,83 @@ while True:
                 window['-TABLE-'].update(values=data, num_rows=50)
                 sg.popup('Data imported successfully.', title='Import Successful', font=('Arial', 12), keep_on_top=True)
 
+    elif event == '-CORRECT-':
+        corrected_count = 0
+        corrected_items = []
+        invalid_date_messages = []
+        invalid_combobox_messages = []
+
+        # Apply corrections to data
+        for row_index, row in enumerate(data):
+            for col_index, cell in enumerate(row):
+                if isinstance(cell, str):  # Process only strings
+                    original_cell = cell
+                    cell = cell.strip(',; ')
+                    cell = re.sub(r'\s+', ' ', cell)
+                    cell = re.sub(r',\s*(\S)', r'; \1', cell)
+                    
+                    # Apply specific column corrections
+                    if headers[col_index] == "locality":
+                        cell = re.sub(r':(?!\s)', ': ', cell)
+                    elif headers[col_index] == "source_type":
+                        cell = cell.capitalize()
+                    elif headers[col_index] == "if_repeated":
+                        cell = "y" if cell.lower() == "yes" else "n" if cell.lower() == "no" else cell
+                    
+                    if cell != original_cell:
+                        data[row_index][col_index] = cell
+                        corrected_count += 1
+                        corrected_items.append(f'Row {row_index + 1}, Column {col_index + 1}: {original_cell} -> {cell}')
+                
+                elif isinstance(cell, datetime.datetime):  # Handle datetime objects separately
+                    original_cell = cell
+                    cell = cell.strftime('%Y-%m-%d %H:%M:%S')
+                    if cell != original_cell:
+                        data[row_index][col_index] = cell
+                        corrected_count += 1
+                        corrected_items.append(f'Row {row_index + 1}, Column {col_index + 1}: {original_cell} -> {cell}')
+        
+        # Validate data
+        for row_index, row in enumerate(data):
+            for col_index, cell in enumerate(row):
+                header = headers[col_index]
+                if isinstance(cell, str):
+                    if header in ["collection_date", "run_date"]:
+                        if not date_pattern.match(cell):
+                            invalid_date_messages.append(f"Invalid date in row {row_index + 1}, column '{header}': '{cell}'")
+                    
+                    if header in options and options[header]['combobox_type'] == 'fix' and options[header]['options']:
+                        if cell not in options[header]['options']:
+                            invalid_combobox_messages.append(f"Invalid fixed option in row {row_index + 1}, column '{header}': '{cell}'")
+
+        # Remove rows that are entirely empty
+        data = [row for row in data if any(cell.strip() for cell in row)]
+        
+        # Update the table
+        window['-TABLE-'].update(values=data)
+
+        # Prepare result text
+        result_text = (f'Corrected rows: {corrected_count}\n'
+                    f'Number of cells with invalid date: {len(invalid_date_messages)}\n'
+                    f'Number of cells with invalid fixed data options: {len(invalid_combobox_messages)}\n'
+                    '---\n')
+        
+        # Add detailed errors
+        detailed_errors = '\n'.join(invalid_date_messages + invalid_combobox_messages)
+        result_text += detailed_errors
+
+        layout = [
+            [sg.Multiline(size=(80, 60), default_text=result_text, disabled=True, autoscroll=True)],
+            [sg.Button('Exit', size=(80, 2), pad=((0, 0), (0, 0)))]  # Center button with padding
+        ]
+
+        correction_popup = sg.Window('Correction Result', layout, modal=True, resizable=True, keep_on_top=True)
+        while True:
+            event, _ = correction_popup.read()
+            if event in (sg.WINDOW_CLOSED, 'Exit'):
+                break
+        correction_popup.close()
+
     elif event == '-TABLE-':
         selected_rows = values['-TABLE-']
         if selected_rows:
