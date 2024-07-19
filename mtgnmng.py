@@ -3,7 +3,6 @@ import csv
 import re
 from datetime import datetime
 import pandas as pd
-import difflib
 import PySimpleGUI as sg
 
 def load_headers(filename):
@@ -200,46 +199,92 @@ while True:
             sg.popup(f"Table data saved to {save_filename}", title='Save Successful', font=('Arial', 12), keep_on_top=True)
 
     elif event == '-IMPORT-':
-        import_filename = sg.popup_get_file('Import File', file_types=(("CSV Files", "*.csv"), ("Excel Files", "*.xlsx")))
+        import_filename = sg.popup_get_file('Import File', file_types=(("CSV Files", "*.csv"), ("Excel Files", "*.xlsx")), keep_on_top=True)
         if import_filename:
             _, ext = os.path.splitext(import_filename)
             if ext == '.csv':
-                df = pd.read_csv(import_filename, dtype=str)  # Read CSV with all columns as strings
+                df_temp = pd.read_csv(import_filename, dtype=str)  # Load as strings
             elif ext == '.xlsx':
-                df = pd.read_excel(import_filename, dtype=str)  # Read Excel with all columns as strings
+                df_temp = pd.read_excel(import_filename, dtype=str)  # Load as strings
             else:
                 sg.popup_error(f"Unsupported file format: {ext}. Please select a CSV or Excel file.")
                 continue
+
+            # Strip whitespace from headers
+            df_temp.columns = df_temp.columns.str.strip()
             
+            # Strip whitespace from data
+            df_temp = df_temp.applymap(lambda x: x.strip() if isinstance(x, str) else x)
+            
+            # Replace NaN with empty strings
+            df_temp = df_temp.fillna('')
+            
+            # Remove fully empty rows
+            df_temp = df_temp[~(df_temp == '').all(axis=1)]
+
             # Ensure headers match with .metagenomongo.csv headers
             script_dir = os.path.dirname(os.path.abspath(__file__))
             headers_file = os.path.join(script_dir, '.metagenomongo.csv')
             expected_headers = load_headers(headers_file)
             
-            # Get actual headers from imported data
-            imported_headers = list(df.columns)
+            # Get actual headers from the temporary DataFrame
+            imported_headers = list(df_temp.columns)
             
-            # Initialize data to update table
-            data_to_update = []
+            # Identify headers in the input file that do not appear in the expected headers
+            incorrect_headers = [header for header in imported_headers if header not in expected_headers]
             
-            # Process each row in the imported dataframe
-            for _, row in df.iterrows():
-                new_entry = [''] * len(expected_headers)
-                for imported_header in imported_headers:
-                    if imported_header in expected_headers:
-                        index = expected_headers.index(imported_header)
-                        new_entry[index] = row[imported_header] if pd.notna(row[imported_header]) else ''
+            if incorrect_headers:
+                # Layout for header correction
+                suggestion_layout = [
+                    [sg.Text(f"The following headers from the imported file do not match the expected headers:\n" + "\n".join(incorrect_headers))],
+                    [sg.Text("Please select the correct header for each mismatched header:")]
+                ]
                 
-                data_to_update.append(new_entry)
-            
-            # Update the existing 'data' list with imported data
-            data.clear()  # Clear existing data
-            data.extend(data_to_update)  # Add imported data
-            
-            # Update the table with the new data
-            window['-TABLE-'].update(values=data, num_rows=len(data))
-            
-            sg.popup('Data imported successfully.', title='Import Successful', font=('Arial', 12), keep_on_top=True)
+                # Create dropdowns for each incorrect header
+                for header in incorrect_headers:
+                    suggestion_layout.append([sg.Text(f"{header}: "), sg.Combo(expected_headers, size=(30, 1), key=f'-{header}-suggestion', readonly=True)])
+                
+                suggestion_layout.append([sg.Button('Cancel', key='-CANCEL-'), sg.Button('Apply Changes', key='-APPLY-')])
+                
+                suggestion_popup = sg.Window('Header Suggestions', suggestion_layout, modal=True, keep_on_top=True)
+                event, values = suggestion_popup.read()
+                suggestion_popup.close()
+                
+                if event == '-APPLY-':
+                    header_mapping = {header: values[f'-{header}-suggestion'] for header in incorrect_headers}
+                    
+                    # Rename the incorrect headers to the selected headers in the DataFrame
+                    df_temp.rename(columns=header_mapping, inplace=True)
+                    
+                    # Remove duplicate columns if they exist
+                    df_temp = df_temp.loc[:, ~df_temp.columns.duplicated()]
+                    
+                    # Reindex df_temp to match the expected headers, filling missing columns with empty strings
+                    df_temp = df_temp.reindex(columns=expected_headers, fill_value='')
+                    
+                    # Remove fully empty rows
+                    df_temp = df_temp[~(df_temp == '').all(axis=1)]
+                    
+                    data = df_temp.values.tolist()
+                    
+                    # Update the table
+                    window['-TABLE-'].update(values=data, num_rows=50)
+                    sg.popup('Data imported successfully with header mapping.', title='Import Successful', font=('Arial', 12), keep_on_top=True)
+                else:
+                    sg.popup_error('Import cancelled. Please correct the headers manually and try again.', keep_on_top=True)
+            else:
+                # No incorrect headers, just update the table
+                df_temp = df_temp.reindex(columns=expected_headers, fill_value='')  # Ensure columns match the expected headers
+                df_temp = df_temp.loc[:, ~df_temp.columns.duplicated()]  # Remove any duplicate columns
+                
+                # Remove fully empty rows
+                df_temp = df_temp[~(df_temp == '').all(axis=1)]
+                
+                data = df_temp.values.tolist()
+                
+                # Update the table
+                window['-TABLE-'].update(values=data, num_rows=50)
+                sg.popup('Data imported successfully.', title='Import Successful', font=('Arial', 12), keep_on_top=True)
 
     elif event == '-TABLE-':
         selected_rows = values['-TABLE-']
