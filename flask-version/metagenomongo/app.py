@@ -10,7 +10,7 @@ import module.validation as data_validation
 app = Flask(__name__)
 app.secret_key = 'supersecretkey'
 UPLOAD_FOLDER = 'uploads'
-ALLOWED_EXTENSIONS = {'csv'}
+ALLOWED_EXTENSIONS = {'csv', 'xlsx'}
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 # fields = ["projectID","sampleID", "specimenID","isolation_source","source_type","species",
@@ -54,10 +54,15 @@ def index():
         if 'file' in request.files:
             file = request.files['file']
             if file and allowed_file(file.filename):
+                # print("57")
                 filename = secure_filename(file.filename)
                 filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
                 file.save(filepath)
-                data = load_csv(filepath)
+                _, ext = os.path.splitext(file.filename)
+                if ext == '.csv':
+                    data = pd.read_csv(filepath, dtype=str)  # Load as strings
+                elif ext == '.xlsx':
+                    data = pd.read_excel(filepath, dtype=str)  # Load as strings
                 print(data)
                 flash('File successfully uploaded and displayed below')
                 return render_template('index.html', \
