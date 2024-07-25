@@ -85,3 +85,26 @@ th, td {
 th {
     background-color: #f2f2f2;
 }
+.form-label {
+    width: 150px;
+    text-align: right;
+    margin-right: 10px;
+}
+.form-group {
+    display: flex;
+    align-items: center;
+    margin-bottom: 2px;
+}
+.container {
+    margin-top: 20px;
+}
+.button-group {
+    margin-top: 20px;
+}
+.table-container {
+    margin-top: 20px;
+}
+.forms{
+    display: grid;
+    grid-template-columns: 60% 30%;
+}
