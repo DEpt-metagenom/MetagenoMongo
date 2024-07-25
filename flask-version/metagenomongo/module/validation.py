@@ -6,6 +6,7 @@ date_pattern = re.compile(r'^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}\.\d{3}Z)?$')
 def data_type_validation(fields, options, values):
     # Retrieve input values
     new_entry = []
+    result = {}
     all_empty = True  # Flag to track if all input fields are empty
     valid = False  # Flag to track if any valid input fields are found
     for field in fields:
@@ -19,22 +20,27 @@ def data_type_validation(fields, options, values):
             if datatype == 'int':
                 if not value.isdigit():
                     valid = False
+                    result["column"] = field
+                    result["error"] = "integer type"
                     break
             elif datatype == 'float':
                 try:
                     float(value)
                 except ValueError:
                     valid = False
+                    result["column"] = field
+                    result["error"] = "float type"
                     break
             elif datatype == 'date':
                 if not date_pattern.match(value) or not is_valid_date(value):
                     valid = False
-                    print("date type error")
+                    result["column"] = field
+                    result["error"] = "date format"
                     break
         # new_entry.append(value)
     if all_empty:
-        result = "Please add some data to the table."
-        return False
+        result["error"] = "Please add some data to the table."
+    
     # elif valid:  # Only add/update if at least one valid input field is found
     #     # Check if updating an existing entry
     #     selected_rows = values['-TABLE-']
@@ -45,9 +51,9 @@ def data_type_validation(fields, options, values):
     #         # Add new entry
     #         data.append(new_entry)
     if valid:
-        return True
+        return result
     else:
-        return False
+        return result
 
 def is_valid_date(date_str):
     try:
