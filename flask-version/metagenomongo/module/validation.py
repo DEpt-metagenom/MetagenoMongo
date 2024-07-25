@@ -5,6 +5,7 @@ date_pattern = re.compile(r'^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}\.\d{3}Z)?$')
 # accepted formats are YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS.fffZ
 def data_type_validation(fields, options, values):
     # Retrieve input values
+    data = []
     new_entry = []
     result = {}
     all_empty = True  # Flag to track if all input fields are empty
@@ -37,7 +38,7 @@ def data_type_validation(fields, options, values):
                     result["column"] = field
                     result["error"] = "date format"
                     break
-        # new_entry.append(value)
+        new_entry.append(value)
     if all_empty:
         result["error"] = "Please add some data to the table."
     
@@ -51,9 +52,11 @@ def data_type_validation(fields, options, values):
     #         # Add new entry
     #         data.append(new_entry)
     if valid:
-        return result
-    else:
-        return result
+        data.append(new_entry)
+    # else:
+    #     return result
+    result["data"]=data
+    return result
 
 def is_valid_date(date_str):
     try:

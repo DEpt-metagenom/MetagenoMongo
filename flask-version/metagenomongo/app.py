@@ -58,13 +58,20 @@ def index():
                 filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
                 file.save(filepath)
                 data = load_csv(filepath)
+                print(data)
                 flash('File successfully uploaded and displayed below')
-                return render_template('index.html', tables=[data.to_html(classes='data', header="true")], fields=fields, values=values)
+                return render_template('index.html', \
+                    tables=[data.to_html(classes='data', header="true")], \
+                    fields=fields, values=values)
         # Handle manual data entry
         if request.form:
             values = request.form
             result = data_validation.data_type_validation(fields, options, values)
             results.append(result)
+            print(pd.DataFrame(result["data"],\
+                   columns=fields))
+            data = pd.DataFrame(result["data"],\
+                   columns=fields)
             # try:
             #     data = pd.read_csv(pd.compat.StringIO(manual_data))
             #     flash('Data successfully entered and displayed below')
@@ -73,7 +80,7 @@ def index():
             #     flash(f'Error in data entry: {e}', 'error')
             #     return redirect(url_for('index'))
 
-    return render_template('index.html', fields=fields, results=results, values=values)
+    return render_template('index.html', tables=[data.to_html(classes='data', header="true")], fields=fields, results=results, values=values)
 
 if __name__ == '__main__':
     app.run(debug=True)
