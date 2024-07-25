@@ -4,27 +4,7 @@
     <meta charset="UTF-8">
     <title>MetagenoMongo v1.0</title>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
-    <style>
-        .form-label {
-            width: 150px;
-            text-align: right;
-            margin-right: 10px;
-        }
-        .form-group {
-            display: flex;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-        .container {
-            margin-top: 20px;
-        }
-        .button-group {
-            margin-top: 20px;
-        }
-        .table-container {
-            margin-top: 20px;
-        }
-    </style>
+    <link rel="stylesheet" href="../static/styles.css">
 </head>
 <body>
     <div class="container">
@@ -39,25 +19,29 @@
             <button type="button" class="btn btn-light">Clear</button>
             <button type="button" class="btn btn-dark">Generate template</button>
         </div>
-        
-        <form method="post" enctype="multipart/form-data">
-          {% for field in fields %}
-            <div class="form-group">
-              <label class="form-label" for="{{ field }}">{{ field }}:</label>
-              <input type="text" class="form-control" id="{{ field }}" name="{{ field }}">
-            </div>
-          {% endfor %}
-            <button type="submit" class="btn btn-primary">Submit</button>
-        </form>
-        
-        <form method="post" enctype="multipart/form-data" class="mt-3">
-            <div class="form-group">
-                <label for="file">Upload CSV File</label>
-                <input type="file" class="form-control-file" id="file" name="file">
-            </div>
-            <button type="submit" class="btn btn-primary">Submit</button>
-        </form>
-
+        <div class="forms">
+            <form method="post" enctype="multipart/form-data">
+            {% for field in fields %}
+                <div class="form-group">
+                <label class="form-label" for="{{ field }}">{{ field }}:</label>
+                {% if values["default"] == 0%}
+                    <input type="text" class="form-control" id="{{ field }}" name="{{ field }}">
+                {% else %}
+                    <input type="text" class="form-control" id="{{ field }}" name="{{ field }}" value="{{ values[field]}}">
+                {% endif %}
+                </div>
+            {% endfor %}
+                <button type="submit" class="btn btn-primary">Submit</button>
+            </form>
+            
+            <form method="post" enctype="multipart/form-data" class="mt-3">
+                <div class="form-group">
+                    <label for="file">Upload CSV File</label>
+                    <input type="file" class="form-control-file" id="file" name="file">
+                </div>
+                <button type="submit" class="btn btn-primary">Submit</button>
+            </form>
+        </div>
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 <div class="mt-3">
@@ -79,7 +63,7 @@
             </div>
         {% endif %}
     </div>
-    <div class="result">{{ result }}</div>
+    <div class="result">{{ results }}</div>
     <script src="../static/index.js"></script>
 </body>
 </html>

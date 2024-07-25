@@ -46,7 +46,9 @@ def load_csv(filepath):
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
-    result = "result"
+    # row, column_name, error type
+    results = []
+    values = {"default": 0}
     if request.method == 'POST':
         # Handle CSV upload
         if 'file' in request.files:
@@ -57,20 +59,21 @@ def index():
                 file.save(filepath)
                 data = load_csv(filepath)
                 flash('File successfully uploaded and displayed below')
-                return render_template('index.html', tables=[data.to_html(classes='data', header="true")], fields=fields)
+                return render_template('index.html', tables=[data.to_html(classes='data', header="true")], fields=fields, values=values)
         # Handle manual data entry
         if request.form:
             values = request.form
-            print(data_validation.data_type_validation(fields, options, values))
-            try:
-                data = pd.read_csv(pd.compat.StringIO(manual_data))
-                flash('Data successfully entered and displayed below')
-                return render_template('index.html', tables=[data.to_html(classes='data', header="true")])
-            except Exception as e:
-                flash(f'Error in data entry: {e}', 'error')
-                return redirect(url_for('index'))
+            result = data_validation.data_type_validation(fields, options, values)
+            results.append(result)
+            # try:
+            #     data = pd.read_csv(pd.compat.StringIO(manual_data))
+            #     flash('Data successfully entered and displayed below')
+            #     return render_template('index.html', tables=[data.to_html(classes='data', header="true")])
+            # except Exception as e:
+            #     flash(f'Error in data entry: {e}', 'error')
+            #     return redirect(url_for('index'))
 
-    return render_template('index.html', fields=fields, result=result)
+    return render_template('index.html', fields=fields, results=results, values=values)
 
 if __name__ == '__main__':
     app.run(debug=True)

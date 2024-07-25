@@ -1,3 +1,5 @@
 .venv/
 testdata/
 venv/
+*.csv
+samples/
