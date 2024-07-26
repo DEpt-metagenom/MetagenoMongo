@@ -19,6 +19,9 @@ h1, h2 {
 form {
     margin: 20px 0;
 }
+form > button{
+    margin-top: 20px;
+}
 
 label {
     display: block;
@@ -112,11 +115,10 @@ th {
     max-height: 400px; 
     overflow-y: auto; 
 }
-.table{
+.table, .result{
     max-height: 300px; 
     overflow-y: auto;
-    table-layout: fixed;
-    width: 100%;
+    overflow-x: auto;
 }
 .th-width{
     /* font: 1em sans-serif; */
