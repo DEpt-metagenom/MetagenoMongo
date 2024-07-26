@@ -2,6 +2,7 @@ body {
     font-family: Arial, sans-serif;
     background-color: #f4f4f4;
     color: #333;
+    height: 100;
 }
 
 .container {
@@ -90,10 +91,9 @@ th {
     text-align: right;
     margin-right: 10px;
 }
-.form-group {
+.csv-upload{
     display: flex;
-    align-items: center;
-    margin-bottom: 2px;
+    text-align: center;
 }
 .container {
     margin-top: 20px;
@@ -107,4 +107,18 @@ th {
 .forms{
     display: grid;
     grid-template-columns: 60% 30%;
+}
+.scrollable-section {
+    max-height: 400px; 
+    overflow-y: auto; 
+}
+.table{
+    max-height: 300px; 
+    overflow-y: auto;
+    table-layout: fixed;
+    width: 100%;
+}
+.th-width{
+    /* font: 1em sans-serif; */
+    width: 400px;
 }

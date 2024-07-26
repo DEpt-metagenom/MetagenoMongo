@@ -33,6 +33,9 @@ headers_file = os.path.join(script_dir, '.metagenomongo.csv')
 fields = load.load_headers(headers_file)
 options = load.load_options(headers_file)
 
+def format_results(results):
+    return results
+
 
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
