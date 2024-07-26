@@ -15,10 +15,11 @@
             <button type="button" class="btn btn-danger">Delete Entry</button>
             <button type="button" class="btn btn-primary">Correct</button>
             <button type="button" class="btn btn-info">Import File</button>
-            <button type="button" class="btn btn-warning">Save as CSV</button>
+            <button type="button" class="btn btn-warning" >Save as CSV</button>
             <button type="button" class="btn btn-light">Clear</button>
             <button type="button" class="btn btn-dark">Generate template</button>
         </div>
+        
         <div class="forms">
             <form method="post" enctype="multipart/form-data">
             {% for field in fields %}
@@ -41,6 +42,7 @@
                 </div>
                 <button type="submit" class="btn btn-primary">Import file</button>
             </form>
+            <div class="result">{{ results }}</div>
         </div>
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
@@ -62,8 +64,8 @@
                 {% endfor %}
             </div>
         {% endif %}
+        
     </div>
-    <div class="result">{{ results }}</div>
     <script src="../static/index.js"></script>
 </body>
 </html>

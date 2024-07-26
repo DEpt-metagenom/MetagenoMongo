@@ -3,6 +3,8 @@ import os
 import csv
 import pandas as pd
 from werkzeug.utils import secure_filename
+import re
+from datetime import datetime
 
 import module.load as load
 import module.validation as data_validation
@@ -31,6 +33,7 @@ headers_file = os.path.join(script_dir, '.metagenomongo.csv')
 fields = load.load_headers(headers_file)
 options = load.load_options(headers_file)
 
+
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
@@ -45,6 +48,7 @@ def load_csv(filepath):
 @app.route('/', methods=['GET', 'POST'])
 def index():
     # row, column_name, error type
+    data = pd.DataFrame()
     results = []
     values = {"default": 0}
     if request.method == 'POST':
@@ -141,19 +145,80 @@ def index():
                     data = df_temp
                     # Update the table
                     ####
-                # flash('File successfully uploaded and displayed below')
+                # elif event == '-CORRECT-':
+                    corrected_count = 0
+                    corrected_items = []
+                    invalid_date_messages = []
+                    invalid_combobox_messages = []
+                    data = df_temp.values.tolist()
+                    # Apply corrections to data
+                    for row_index, row in enumerate(data):
+                        for col_index, cell in enumerate(row):
+                            if isinstance(cell, str):  # Process only strings
+                                original_cell = cell
+                                cell = cell.strip(',; ')
+                                cell = re.sub(r'\s+', ' ', cell)
+                                cell = re.sub(r',\s*(\S)', r'; \1', cell)
+                                
+                                # Apply specific column corrections
+                                if fields[col_index] == "locality":
+                                    cell = re.sub(r':(?!\s)', ': ', cell)
+                                elif fields[col_index] == "source_type":
+                                    cell = cell.capitalize()
+                                elif fields[col_index] == "if_repeated":
+                                    cell = "y" if cell.lower() == "yes" else "n" if cell.lower() == "no" else cell
+                                
+                                if cell != original_cell:
+                                    data[row_index][col_index] = cell
+                                    corrected_count += 1
+                                    corrected_items.append(f'Row {row_index + 1}, Column {col_index + 1}: {original_cell} -> {cell}')
+                            
+                            elif isinstance(cell, datetime.datetime):  # Handle datetime objects separately
+                                original_cell = cell
+                                cell = cell.strftime('%Y-%m-%d %H:%M:%S')
+                                if cell != original_cell:
+                                    data[row_index][col_index] = cell
+                                    corrected_count += 1
+                                    corrected_items.append(f'Row {row_index + 1}, Column {col_index + 1}: {original_cell} -> {cell}')
+                    date_pattern = re.compile(r'^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}\.\d{3}Z)?$') 
+                    # Validate data
+                    for row_index, row in enumerate(data):
+                        for col_index, cell in enumerate(row):
+                            header = fields[col_index]
+                            if isinstance(cell, str):
+                                if header in ["collection_date", "run_date"]:
+                                    if not date_pattern.match(cell):
+                                        invalid_date_messages.append(f"Invalid date in row {row_index + 1}, column '{header}': '{cell}'")
+                                
+                                if header in options and options[header]['combobox_type'] == 'fix' and options[header]['options']:
+                                    if cell not in options[header]['options']:
+                                        invalid_combobox_messages.append(f"Invalid fixed option in row {row_index + 1}, column '{header}': '{cell}'")
+
+                    # Remove rows that are entirely empty
+                    data = [row for row in data if any(cell.strip() for cell in row)]
+
+
+                    # Prepare result text
+                    result_text = (f'Corrected rows: {corrected_count}\n'
+                                f'Number of cells with invalid date: {len(invalid_date_messages)}\n'
+                                f'Number of cells with invalid fixed data options: {len(invalid_combobox_messages)}\n'
+                                '---\n')
+                    
+                    # Add detailed errors
+                    detailed_errors = '\n'.join(invalid_date_messages + invalid_combobox_messages)
+                    result_text += detailed_errors
+                    results.append(result_text)
+
+                ###
                 return render_template('index.html', \
-                    tables=[data.to_html(classes='data', header="true")], \
-                    fields=fields, values=values)
+                    tables=[df_temp.to_html(classes='data', header="true")], \
+                    fields=fields, values=values, results=results)
         # Handle manual data entry
         if request.form:
             values = request.form
             result = data_validation.data_type_validation(fields, options, values)
             results.append(result)
-            print(pd.DataFrame(result["data"],\
-                   columns=fields))
-            data = pd.DataFrame(result["data"],\
-                   columns=fields)
+            data = pd.DataFrame(result["data"],columns=fields)
             # try:
             #     data = pd.read_csv(pd.compat.StringIO(manual_data))
             #     flash('Data successfully entered and displayed below')
