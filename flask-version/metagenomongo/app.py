@@ -47,7 +47,8 @@ def save():
     mem = io.BytesIO()
     mem.write(output.getvalue().encode('utf-8'))
     mem.seek(0)
-    return send_file(mem, mimetype='text/csv', as_attachment=True, download_name='saved_file.csv')
+    return send_file(mem, mimetype='text/csv', \
+                     as_attachment=True, download_name='metamongo_file.csv')
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -165,17 +166,15 @@ def index():
 
 
                     # Prepare result text
-                    result_text = (f'Corrected rows: {corrected_count}\n'
-                                f'Number of cells with invalid date: {len(invalid_date_messages)}\n'
-                                f'Number of cells with invalid fixed data options: {len(invalid_combobox_messages)}\n'
-                                '---\n')
-                    
-                    # Add detailed errors
-                    detailed_errors = '\n'.join(invalid_date_messages + invalid_combobox_messages)
-                    result_text += detailed_errors
-                    results.append(result_text)
-
-                ###
+                    if len(invalid_date_messages) != 0:
+                        result_text = (
+                                    f'Number of cells with invalid date: {len(invalid_date_messages)}\n'
+                                    # f'Number of cells with invalid fixed data options: {len(invalid_combobox_messages)}\n'
+                                    )
+                        # Add detailed errors
+                        detailed_errors = '\n'.join(invalid_date_messages + invalid_combobox_messages)
+                        result_text += detailed_errors
+                        results.append({'error': result_text})
                 return render_template('index.html', \
                     tables=[df_temp.to_html(classes='data', header="true")], \
                     fields=fields, values=values, results=results)
@@ -184,9 +183,13 @@ def index():
             values = request.form
             result = data_validation.data_type_validation(fields, options, values)
             results.append(result)
+            if "error" in results:
+                    print("error")
+            print(result)
             data = pd.DataFrame(result["data"],columns=fields)
+            return render_template('index.html', tables=[data.to_html(classes='data', header="true")], fields=fields, results=results, values=values)
 
-    return render_template('index.html', tables=[data.to_html(classes='data', header="true")], fields=fields, results=results, values=values)
+    return render_template('index.html', tables=[], fields=fields, results=results, values=values)
 
 if __name__ == '__main__':
     app.run(debug=True)

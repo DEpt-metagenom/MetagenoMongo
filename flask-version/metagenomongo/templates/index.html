@@ -60,19 +60,21 @@
                                 {% endfor %}
                             </div>
                         </div>
+                        {% if not results%}
                         <form action="/save" method="post">
                             <input type="hidden" name="csv_data" value="{{ tables[0] }}">
                             <input type="submit" value="Save">
                         </form>
                         {% endif %}
+                        
+                        {% endif %}
                     </div>
                     <div class="bottom-half">
                         <!-- Bottom half content here -->
-                        
-                        <div class="result">
+                        <div class="result">             
                             {% for result in results %}
-                            <p>{{ result }}</p>
-                            {% endfor%}
+                            <p> {{ result.error }} </p>
+                            {% endfor %}
                         </div>
                         
                     </div>
