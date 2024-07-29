@@ -1,10 +1,11 @@
-from flask import Flask, request, render_template, redirect, url_for, flash
+from flask import Flask, request, render_template, redirect, url_for, send_file
 import os
 import csv
 import pandas as pd
 from werkzeug.utils import secure_filename
 import re
 from datetime import datetime
+import io
 
 import module.load as load
 import module.validation as data_validation
@@ -15,18 +16,6 @@ UPLOAD_FOLDER = 'uploads'
 ALLOWED_EXTENSIONS = {'csv', 'xlsx'}
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-# fields = ["projectID","sampleID", "specimenID","isolation_source","source_type","species",
-# "sex","host","mother","collection_date","collected_by","locality","locality_2",
-# "preservation","tissue","comment","platform","sequencing_approach","barcode",
-# "run_date","run_directory","project_directory","if_repeated","why_repeated",
-# "assembly_method-version","genome_coverage","enrichment_media","DNA_conc",
-# "DNA_storage",	"strain_storage",	"subgroup",	"hatchery",	"1st_fase_farm",
-# "age","ESBL","AmpC","CarbapenemR","hodge_test","AMP","COX","CRO",
-# "CZD","FEP","ERT","PXB","CIP","TET","TGC","SXT","AKN","GMN",
-# "TMN","AMC","API","CR","CZA","CL","COL","FOS","GME","IMP",
-# "LIN","MRP","NFE","NIT","TEI","VA","PTZ","AMX","CI","CXM",
-# "SAM","LEV","mCIM","CT","ColistinMIC","ERTMIC","ETPMIC",
-# "IMIMIC","MERMIC","MRPMIC","TEIMIC","VAMIC","ATM","FFC"]
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 headers_file = os.path.join(script_dir, '.metagenomongo.csv')
@@ -47,6 +36,18 @@ def allowed_file(filename):
 def load_csv(filepath):
     df = pd.read_csv(filepath)
     return df
+
+@app.route('/save', methods=['GET', 'POST'])
+def save():
+    csv_data = request.form['csv_data']
+    df = pd.read_html(csv_data, index_col=None)[0]
+    df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
+    output = io.StringIO()
+    df.to_csv(output, index=False)
+    mem = io.BytesIO()
+    mem.write(output.getvalue().encode('utf-8'))
+    mem.seek(0)
+    return send_file(mem, mimetype='text/csv', as_attachment=True, download_name='saved_file.csv')
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -98,44 +99,6 @@ def index():
                     results.append(result)
                     return render_template('index.html', \
                     fields=fields, values=values, results=results)
-                    # # Layout for header correction
-                    # suggestion_layout = [
-                    #     [sg.Text(f"The following headers from the imported file do not match the expected headers:\n" + "\n".join(incorrect_headers))],
-                    #     [sg.Text("Please select the correct header for each mismatched header:")]
-                    # ]
-                    
-                    # Create dropdowns for each incorrect header
-                    # for header in incorrect_headers:
-                    #     suggestion_layout.append([sg.Text(f"{header}: "), sg.Combo(expected_headers, size=(30, 1), key=f'-{header}-suggestion', readonly=True)])
-                    
-                    # suggestion_layout.append([sg.Button('Cancel', key='-CANCEL-'), sg.Button('Apply Changes', key='-APPLY-')])
-                    
-                    # suggestion_popup = sg.Window('Header Suggestions', suggestion_layout, modal=True, keep_on_top=True)
-                    # event, values = suggestion_popup.read()
-                    # suggestion_popup.close()
-                    
-                    # if event == '-APPLY-':
-                    #     header_mapping = {header: values[f'-{header}-suggestion'] for header in incorrect_headers}
-                        
-                    #     # Rename the incorrect headers to the selected headers in the DataFrame
-                    #     df_temp.rename(columns=header_mapping, inplace=True)
-                        
-                    #     # Remove duplicate columns if they exist
-                    #     df_temp = df_temp.loc[:, ~df_temp.columns.duplicated()]
-                        
-                    #     # Reindex df_temp to match the expected headers, filling missing columns with empty strings
-                    #     df_temp = df_temp.reindex(columns=expected_headers, fill_value='')
-                        
-                    #     # Remove fully empty rows
-                    #     df_temp = df_temp[~(df_temp == '').all(axis=1)]
-                        
-                    #     data = df_temp.values.tolist()
-                        
-                    #     # Update the table
-                    #     window['-TABLE-'].update(values=data, num_rows=50)
-                    #     sg.popup('Data imported successfully with header mapping.', title='Import Successful', font=('Arial', 12), keep_on_top=True)
-                    # else:
-                    #     sg.popup_error('Import cancelled. Please correct the headers manually and try again.', keep_on_top=True)
                 else:
                     # No incorrect headers, just update the table
                     df_temp = df_temp.reindex(columns=expected_headers, fill_value='')  # Ensure columns match the expected headers
@@ -222,13 +185,6 @@ def index():
             result = data_validation.data_type_validation(fields, options, values)
             results.append(result)
             data = pd.DataFrame(result["data"],columns=fields)
-            # try:
-            #     data = pd.read_csv(pd.compat.StringIO(manual_data))
-            #     flash('Data successfully entered and displayed below')
-            #     return render_template('index.html', tables=[data.to_html(classes='data', header="true")])
-            # except Exception as e:
-            #     flash(f'Error in data entry: {e}', 'error')
-            #     return redirect(url_for('index'))
 
     return render_template('index.html', tables=[data.to_html(classes='data', header="true")], fields=fields, results=results, values=values)
 
