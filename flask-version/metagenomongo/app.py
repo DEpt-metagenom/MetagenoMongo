@@ -7,8 +7,10 @@ import re
 from datetime import datetime
 import io
 
+
 import module.load as load
 import module.validation as data_validation
+import module.email as email
 
 app = Flask(__name__)
 app.secret_key = 'supersecretkey'
@@ -21,9 +23,10 @@ script_dir = os.path.dirname(os.path.abspath(__file__))
 headers_file = os.path.join(script_dir, '.metagenomongo.csv')
 fields = load.load_headers(headers_file)
 options = load.load_options(headers_file)
-
-def format_results(results):
-    return results
+# Ensure headers match with .metagenomongo.csv headers
+script_dir = os.path.dirname(os.path.abspath(__file__))
+headers_file = os.path.join(script_dir, '.metagenomongo.csv')
+expected_headers = load.load_headers(headers_file)
 
 
 if not os.path.exists(UPLOAD_FOLDER):
@@ -83,10 +86,7 @@ def index():
                 # Remove fully empty rows
                 df_temp = df_temp[~(df_temp == '').all(axis=1)]
 
-                # Ensure headers match with .metagenomongo.csv headers
-                script_dir = os.path.dirname(os.path.abspath(__file__))
-                headers_file = os.path.join(script_dir, '.metagenomongo.csv')
-                expected_headers = load.load_headers(headers_file)
+                
                 
                 # Get actual headers from the temporary DataFrame
                 imported_headers = list(df_temp.columns)
@@ -103,6 +103,13 @@ def index():
                 else:
                     # No incorrect headers, just update the table
                     data_validation.validation_all(expected_headers, fields, options, results, df_temp)
+
+                    sender_email = "your_email@gmail.com"
+                    sender_password = "your_password"  # Use an app-specific password for better security
+                    recipient_email = "recipient@example.com"
+                    subject = "Test Email from Python"
+                    body = "This is a test email sent from Python!"
+                    # email.send_email(sender_email, sender_password, recipient_email, subject, body)                
                 return render_template('index.html', \
                     tables=[df_temp.to_html(classes='data', header="true")], \
                     fields=fields, values=values, results=results)
@@ -111,10 +118,9 @@ def index():
             values = request.form
             result = data_validation.data_type_validation(fields, options, values)
             results.append(result)
-            if "error" in results:
-                    print("error")
-            print(result)
             data = pd.DataFrame(result["data"],columns=fields)
+            result.pop("data", None)
+            data_validation.validation_all(expected_headers, fields, options, results, data)
             return render_template('index.html', tables=[data.to_html(classes='data', header="true")], fields=fields, results=results, values=values)
 
     return render_template('index.html', tables=[], fields=fields, results=results, values=values)
