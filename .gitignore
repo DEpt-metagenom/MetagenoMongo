@@ -3,3 +3,6 @@ testdata/
 venv/
 *.csv
 samples/
+__pycache__/
+*.xl
+upload/
