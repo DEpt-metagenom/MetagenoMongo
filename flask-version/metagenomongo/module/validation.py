@@ -1,5 +1,6 @@
 import re
 from datetime import datetime
+
 # return number  number:message 
 date_pattern = re.compile(r'^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}\.\d{3}Z)?$') 
 # accepted formats are YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS.fffZ
@@ -13,48 +14,11 @@ def data_type_validation(fields, options, values):
     for field in fields:
         value = values[field]
         if value:  # Non-empty field found
-            # print(value) ok skip empty field
             all_empty = False
-            valid = True
-            datatype = options[field]['datatype']
-            # print(datatype) ok
-            if datatype == 'int':
-                if not value.isdigit():
-                    valid = False
-                    result["column"] = field
-                    result["error"] = "integer type"
-                    break
-            elif datatype == 'float':
-                try:
-                    float(value)
-                except ValueError:
-                    valid = False
-                    result["column"] = field
-                    result["error"] = "float type"
-                    break
-            elif datatype == 'date':
-                if not date_pattern.match(value) or not is_valid_date(value):
-                    valid = False
-                    result["column"] = field
-                    result["error"] = "date format"
-                    break
         new_entry.append(value)
     if all_empty:
         result["error"] = "Please add some data to the table."
-    
-    # elif valid:  # Only add/update if at least one valid input field is found
-    #     # Check if updating an existing entry
-    #     selected_rows = values['-TABLE-']
-    #     if selected_rows:
-    #         # Update the selected row
-    #         data[selected_rows[0]] = new_entry
-    #     else:
-    #         # Add new entry
-    #         data.append(new_entry)
-    if valid:
-        data.append(new_entry)
-    # else:
-    #     return result
+    data.append(new_entry)
     result["data"]=data
     return result
 
@@ -69,13 +33,22 @@ def is_valid_date(date_str):
         except ValueError:
             return False
 
+def create_data_type_list(data_type, fields, options):
+    data_list = []
+    for field in fields:
+        
+        if data_type == options[field]['datatype']:
+           data_list.append(field)
+        elif data_type == options[field]['datatype']:
+            data_list.append(field)
+    return data_list
+
 def validation_all(expected_headers, fields, options, results, df_temp):
     df_temp = df_temp.reindex(columns=expected_headers, fill_value='')  # Ensure columns match the expected headers
-    df_temp = df_temp.loc[:, ~df_temp.columns.duplicated()]  # Remove any duplicate columns
-                    
-                    # Remove fully empty rows
+    df_temp = df_temp.loc[:, ~df_temp.columns.duplicated()]  # Remove any duplicate columns              
+    
+    # Remove fully empty rows
     df_temp = df_temp[~(df_temp == '').all(axis=1)]
-                    
     data_tolist = df_temp.values.tolist()
     data = df_temp
     corrected_count = 0
@@ -83,6 +56,8 @@ def validation_all(expected_headers, fields, options, results, df_temp):
     invalid_date_messages = []
     invalid_combobox_messages = []
     data = df_temp.values.tolist()
+    int_dynamic_type = create_data_type_list("int", fields, options)
+    float_dynamic_type = create_data_type_list("float", fields, options)
     # Apply corrections to data
     for row_index, row in enumerate(data):
         for col_index, cell in enumerate(row):
@@ -119,16 +94,27 @@ def validation_all(expected_headers, fields, options, results, df_temp):
             header = fields[col_index]
             if isinstance(cell, str):
                 if header in ["collection_date", "run_date"]:
+                    
                     if not date_pattern.match(cell):
                         invalid_date_messages.append(f"Invalid date in row {row_index + 1}, column '{header}': '{cell}'")
-                
                 if header in options and options[header]['combobox_type'] == 'fix' and options[header]['options']:
                     if cell not in options[header]['options']:
                         invalid_combobox_messages.append(f"Invalid fixed option in row {row_index + 1}, column '{header}': '{cell}'")
+                if header in int_dynamic_type:
+                    if cell != "":
+                        if not cell.isdigit():
+                            invalid_combobox_messages.append(f"Invalid data type in row {row_index + 1}, column '{header}': '{cell}': Int")
+                if header in float_dynamic_type:
+                    if cell != "":
+                        try:
+                            float(cell)
+                        except ValueError:
+                            invalid_combobox_messages.append(f"Invalid data type in row {row_index + 1}, column '{header}': '{cell}': Float")
+    
     # Remove rows that are entirely empty
     data = [row for row in data if any(cell.strip() for cell in row)]
     # Prepare result text
-    if len(invalid_date_messages) != 0:
+    if len(invalid_date_messages) != 0 or len(invalid_combobox_messages) != 0:
         result_text = (
                     f'Number of cells with invalid date: {len(invalid_date_messages)}\n'
                     # f'Number of cells with invalid fixed data options: {len(invalid_combobox_messages)}\n'

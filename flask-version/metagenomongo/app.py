@@ -24,8 +24,6 @@ headers_file = os.path.join(script_dir, '.metagenomongo.csv')
 fields = load.load_headers(headers_file)
 options = load.load_options(headers_file)
 # Ensure headers match with .metagenomongo.csv headers
-script_dir = os.path.dirname(os.path.abspath(__file__))
-headers_file = os.path.join(script_dir, '.metagenomongo.csv')
 expected_headers = load.load_headers(headers_file)
 
 
@@ -102,7 +100,8 @@ def index():
                     fields=fields, values=values, results=results)
                 else:
                     # No incorrect headers, just update the table
-                    data_validation.validation_all(expected_headers, fields, options, results, df_temp)
+                    data_validation.validation_all(expected_headers,\
+                                    fields, options, results, df_temp)
 
                     sender_email = "your_email@gmail.com"
                     sender_password = "your_password"  # Use an app-specific password for better security
