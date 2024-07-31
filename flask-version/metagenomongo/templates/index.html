@@ -9,16 +9,6 @@
 <body>
     <div class="container">
         <h1>Metageno <strong>Mongo</strong></h1>
-        <div class="btn-group" role="group" aria-label="Button group">
-            <button type="button" class="btn btn-success">Add/Update Data</button>
-            <button type="button" class="btn btn-secondary">Duplicate Entry</button>
-            <button type="button" class="btn btn-danger">Delete Entry</button>
-            <button type="button" class="btn btn-primary">Correct</button>
-            <button type="button" class="btn btn-info">Import File</button>
-            
-            <button type="button" class="btn btn-light">Clear</button>
-            <button type="button" class="btn btn-dark">Generate template</button>
-        </div>
         <div class="container-fluid">
             <div class="row no-gutters">
                 <div class="col-md-4 left-side">
@@ -36,7 +26,9 @@
                                 </div>
                             {% endfor %}
                         </div>
-                        <button type="submit" class="btn btn-primary">Add/Update</button>
+                        <div class="d-grid col-6 mx-auto pt-3">
+                            <button type="submit" class="btn btn-info">Add/Update</button>
+                        </div>
                     </form>
                 </div>
                 <div class="col-md-8 right-side d-flex flex-column">
@@ -47,7 +39,7 @@
                                 <label for="file">Upload CSV File</label>
                                 <input type="file" class="form-control-file" id="file" name="file">
                             </div>
-                            <button type="submit" class="btn btn-primary w-25 h-25">Import file</button>
+                            <button type="submit" class="btn btn-success w-25 h-25">Import file</button>
                         </form>
                         {% if tables %}
                         <div class="table-container">
@@ -63,7 +55,9 @@
                         {% if not results%}
                         <form action="/save" method="post">
                             <input type="hidden" name="csv_data" value="{{ tables[0] }}">
-                            <input type="submit" value="Save">
+                            <div class="d-grid col-6 mx-auto">
+                                <button type="submit">Save as csv</button>
+                            </div>
                         </form>
                         {% endif %}
                         
