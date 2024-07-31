@@ -116,7 +116,6 @@ def index():
         if request.form:
             values = request.form
             result = data_validation.data_type_validation(fields, options, values)
-            results.append(result)
             data = pd.DataFrame(result["data"],columns=fields)
             result.pop("data", None)
             data_validation.validation_all(expected_headers, fields, options, results, data)
