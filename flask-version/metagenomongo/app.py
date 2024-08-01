@@ -103,9 +103,9 @@ def index():
                     data_validation.validation_all(expected_headers,\
                                     fields, options, results, df_temp)
 
-                    sender_email = "your_email@gmail.com"
-                    sender_password = "your_password"  # Use an app-specific password for better security
-                    recipient_email = "recipient@example.com"
+                    sender_email = ""
+                    sender_password = ""
+                    recipient_email = ""
                     subject = "Test Email from Python"
                     body = "This is a test email sent from Python!"
                     # email.send_email(sender_email, sender_password, recipient_email, subject, body)                

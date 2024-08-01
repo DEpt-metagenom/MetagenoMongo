@@ -46,7 +46,6 @@ def create_data_type_list(data_type, fields, options):
 def validation_all(expected_headers, fields, options, results, df_temp):
     df_temp = df_temp.reindex(columns=expected_headers, fill_value='')  # Ensure columns match the expected headers
     df_temp = df_temp.loc[:, ~df_temp.columns.duplicated()]  # Remove any duplicate columns              
-    print(results)
     # Remove fully empty rows
     df_temp = df_temp[~(df_temp == '').all(axis=1)]
     data_tolist = df_temp.values.tolist()
@@ -114,7 +113,6 @@ def validation_all(expected_headers, fields, options, results, df_temp):
     # Remove rows that are entirely empty
     data = [row for row in data if any(cell.strip() for cell in row)]
     # Prepare result text
-    print(results)
     if len(invalid_date_messages) != 0 or len(invalid_combobox_messages) != 0:
         result_text = (
                     f'Number of cells with invalid date: {len(invalid_date_messages)}\n'
@@ -124,4 +122,3 @@ def validation_all(expected_headers, fields, options, results, df_temp):
         detailed_errors = '\n'.join(invalid_date_messages + invalid_combobox_messages)
         result_text += detailed_errors
         results.append({'error': result_text})
-        print(results)
