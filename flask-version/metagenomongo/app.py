@@ -1,11 +1,10 @@
 from flask import Flask, request, render_template, redirect, url_for, send_file
 import os
-import csv
+
 import pandas as pd
 from werkzeug.utils import secure_filename
-import re
-from datetime import datetime
 import io
+
 
 
 import module.load as load
@@ -50,6 +49,19 @@ def save():
     mem.seek(0)
     return send_file(mem, mimetype='text/csv', \
                      as_attachment=True, download_name='metamongo_file.csv')
+
+@app.route('/correct', methods=['GET', 'POST'])
+def correct():
+    results = []
+    values = {"default": 0}
+    values = request.form
+    csv_data = request.form['csv_data']
+    data = pd.read_html(csv_data, index_col=None)[0]
+    data = data.loc[:, ~data.columns.str.contains('^Unnamed')]
+    data = data.fillna("")
+    data = data.astype(str)
+    data_validation.validation_all(expected_headers, fields, options, results, data)
+    return render_template('index.html', tables=[data.to_html(classes='data', header="true")], fields=fields, results=results, values=values)
 
 @app.route('/', methods=['GET', 'POST'])
 def index():

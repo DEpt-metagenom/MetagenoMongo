@@ -79,7 +79,7 @@ def validation_all(expected_headers, fields, options, results, df_temp):
                     corrected_count += 1
                     corrected_items.append(f'Row {row_index + 1}, Column {col_index + 1}: {original_cell} -> {cell}')
             
-            elif isinstance(cell, datetime.datetime):  # Handle datetime objects separately
+            elif isinstance(cell, datetime):  # Handle datetime objects separately
                 original_cell = cell
                 cell = cell.strftime('%Y-%m-%d %H:%M:%S')
                 if cell != original_cell:

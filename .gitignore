@@ -4,5 +4,5 @@ venv/
 *.csv
 samples/
 __pycache__/
-*.xl
+*.xlsx
 upload/
