@@ -60,11 +60,12 @@
                             </div>
                         </form>
                         {% else %}
-                        
+                        <form action="/correct" method="post">
+                            <input type="hidden" id="table_data" value="{{ tables[0] }}">
                             <div class="d-grid col-6 mx-auto">
-                                <button type="submit" id="correct_btn" form="input_form">Correct</button>
+                                <button type="submit" id="correct_btn">correct</button>
                             </div>
-                        
+                        </form>
                         {% endif %}
                         
                         {% endif %}
