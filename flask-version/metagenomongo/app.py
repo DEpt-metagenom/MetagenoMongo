@@ -64,7 +64,7 @@ def index():
         # Handle CSV upload
         if 'file' in request.files:
             file = request.files['file']
-            if file and allowed_file(file.filename):
+            if file:
                 filename = secure_filename(file.filename)
                 filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
                 file.save(filepath)
@@ -118,7 +118,7 @@ def index():
         # Handle manual data entry
         if request.form:
             values = request.form
-            result = data_validation.data_type_validation(fields, options, values)
+            result = data_validation.data_assign(fields, values)
             data = pd.DataFrame(result["data"],columns=fields)
             result.pop("data", None)
             data_validation.validation_all( fields, options, results, data)
