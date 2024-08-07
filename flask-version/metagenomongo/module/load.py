@@ -2,15 +2,6 @@ import os
 import csv
 import pandas as pd
 
-def load_headers(filename):
-    if not os.path.exists(filename):
-        # sg.popup_error(f"File {filename} not found!")
-        return []
-    with open(filename, 'r') as file:
-        reader = csv.reader(file)
-        headers = [row[0] for row in reader if not row[0].startswith("#")]
-    return headers[1:] # Skip the header row
-
 def load_options(filename):
     if not os.path.exists(filename):
         # sg.popup_error(f"File {filename} not found!")

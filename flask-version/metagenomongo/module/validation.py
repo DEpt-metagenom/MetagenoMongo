@@ -10,7 +10,6 @@ def data_type_validation(fields, options, values):
     new_entry = []
     result = {}
     all_empty = True  # Flag to track if all input fields are empty
-    valid = False  # Flag to track if any valid input fields are found
     for field in fields:
         value = values[field]
         if value:  # Non-empty field found
@@ -43,8 +42,8 @@ def create_data_type_list(data_type, fields, options):
             data_list.append(field)
     return data_list
 
-def validation_all(expected_headers, fields, options, results, df_temp):
-    df_temp = df_temp.reindex(columns=expected_headers, fill_value='')  # Ensure columns match the expected headers
+def validation_all(fields, options, results, df_temp):
+    df_temp = df_temp.reindex(columns=fields, fill_value='')  # Ensure columns match the expected headers
     df_temp = df_temp.loc[:, ~df_temp.columns.duplicated()]  # Remove any duplicate columns              
     # Remove fully empty rows
     df_temp = df_temp[~(df_temp == '').all(axis=1)]
@@ -102,13 +101,13 @@ def validation_all(expected_headers, fields, options, results, df_temp):
                 if header in int_dynamic_type:
                     if cell != "":
                         if not cell.isdigit():
-                            invalid_combobox_messages.append(f"Invalid data type in row {row_index + 1}, column '{header}': '{cell}': Int")
+                            invalid_combobox_messages.append(f"Invalid data type in row {row_index + 1}, column '{header}': '{cell}': Expected data type: int")
                 if header in float_dynamic_type:
                     if cell != "":
                         try:
                             float(cell)
                         except ValueError:
-                            invalid_combobox_messages.append(f"Invalid data type in row {row_index + 1}, column '{header}': '{cell}': Float")
+                            invalid_combobox_messages.append(f"Invalid data type in row {row_index + 1}, column '{header}': '{cell}': Expected data type: float")
     
     # Remove rows that are entirely empty
     data = [row for row in data if any(cell.strip() for cell in row)]

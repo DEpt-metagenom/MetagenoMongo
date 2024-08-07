@@ -7,10 +7,6 @@ def send_email(sender_email, sender_password, recipient_email, subject, body):
     message = MIMEMultipart()
     message['From'] = sender_email
     message['To'] = recipient_email
-    message['Subject'] = subject
-    sender_email=""
-    sender_password=""
-    recipient_email=sender_email
 
     # Add body to email
     message.attach(MIMEText(body, 'plain'))

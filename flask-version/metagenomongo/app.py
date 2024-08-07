@@ -20,10 +20,9 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 headers_file = os.path.join(script_dir, '.metagenomongo.csv')
-fields = load.load_headers(headers_file)
 options = load.load_options(headers_file)
+fields = list(options.keys())
 # Ensure headers match with .metagenomongo.csv headers
-expected_headers = load.load_headers(headers_file)
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -52,7 +51,7 @@ def correct():
     data = data.loc[:, ~data.columns.str.contains('^Unnamed')]
     data = data.fillna("")
     data = data.astype(str)
-    data_validation.validation_all(expected_headers, fields, options, results, data)
+    data_validation.validation_all(fields, options, results, data)
     return render_template('index.html', tables=[data.to_html(classes='data', header="true")], fields=fields, results=results, values=values)
 
 @app.route('/', methods=['GET', 'POST'])
@@ -94,18 +93,18 @@ def index():
                 imported_headers = list(df_temp.columns)
                 
                 # Identify headers in the input file that do not appear in the expected headers
-                incorrect_headers = [header for header in imported_headers if header not in expected_headers]
+                incorrect_headers = [header for header in imported_headers if header not in fields]
                 
                 if incorrect_headers:
 
-                    result= {"error":"Invalide file structure. Different number of columns or names:::" + ",".join(incorrect_headers)}
+                    result= {"error":"Input file contains unexpected fields :::" + ",".join(incorrect_headers)}
                     results.append(result)
                     return render_template('index.html', \
                     fields=fields, values=values, results=results)
                 else:
                     # No incorrect headers, just update the table
-                    data_validation.validation_all(expected_headers,\
-                                    fields, options, results, df_temp)
+                    data_validation.validation_all(fields,\
+                                    options, results, df_temp)
 
                     sender_email = ""
                     sender_password = ""
@@ -122,7 +121,7 @@ def index():
             result = data_validation.data_type_validation(fields, options, values)
             data = pd.DataFrame(result["data"],columns=fields)
             result.pop("data", None)
-            data_validation.validation_all(expected_headers, fields, options, results, data)
+            data_validation.validation_all( fields, options, results, data)
             return render_template('index.html', tables=[data.to_html(classes='data', header="true")], fields=fields, results=results, values=values)
 
     return render_template('index.html', tables=[], fields=fields, results=results, values=values)
