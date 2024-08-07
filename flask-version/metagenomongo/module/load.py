@@ -20,8 +20,8 @@ def load_options(filename):
         next(reader)  # Skip the header row
         options = {}
         for row in reader:
-            header = row[0] # column name
-            options[header] = {
+            field = row[0].strip()
+            options[field] = {
                 'datatype': row[1], # str, int, float, date
                 'options': row[2].split(',') if row[2] else [], # empty or options within quotation marks
                 'combobox_type': row[3] # fix, dynamic

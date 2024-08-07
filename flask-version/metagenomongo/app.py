@@ -25,17 +25,9 @@ options = load.load_options(headers_file)
 # Ensure headers match with .metagenomongo.csv headers
 expected_headers = load.load_headers(headers_file)
 
-
-if not os.path.exists(UPLOAD_FOLDER):
-    os.makedirs(UPLOAD_FOLDER)
-
 def allowed_file(filename):
     return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-def load_csv(filepath):
-    df = pd.read_csv(filepath)
-    return df
+           filename.rsplit('.', 1)[-1].lower() in ALLOWED_EXTENSIONS
 
 @app.route('/save', methods=['GET', 'POST'])
 def save():
