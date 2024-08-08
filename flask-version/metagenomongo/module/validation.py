@@ -16,18 +16,10 @@ def data_assign(fields, values):
     return result
 
 def create_data_type_list(data_type, fields, options):
-    data_list = []
-    for field in fields:
-        
-        if data_type == options[field]['datatype']:
-           data_list.append(field)
-        elif data_type == options[field]['datatype']:
-            data_list.append(field)
-    return data_list
+    return [field for field in fields if data_type == options[field]['datatype']]
 
 def validation_all(fields, options, results, df_temp):
     df_temp = df_temp.reindex(columns=fields, fill_value='')  # Ensure columns match the expected headers
-    df_temp = df_temp.loc[:, ~df_temp.columns.duplicated()]  # Remove any duplicate columns              
     # Remove fully empty rows
     df_temp = df_temp[~(df_temp == '').all(axis=1)]
     corrected_count = 0
