@@ -6,7 +6,6 @@ import io
 
 import module.load as load
 import module.validation as data_validation
-import module.email as email
 
 app = Flask(__name__)
 app.secret_key = 'supersecretkey'
