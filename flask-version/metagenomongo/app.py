@@ -1,11 +1,8 @@
 from flask import Flask, request, render_template, redirect, url_for, send_file
 import os
-
 import pandas as pd
 from werkzeug.utils import secure_filename
 import io
-
-
 
 import module.load as load
 import module.validation as data_validation
@@ -17,12 +14,10 @@ UPLOAD_FOLDER = 'uploads'
 ALLOWED_EXTENSIONS = {'csv', 'xlsx'}
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-
 script_dir = os.path.dirname(os.path.abspath(__file__))
 headers_file = os.path.join(script_dir, '.metagenomongo.csv')
 options = load.load_options(headers_file)
 fields = list(options.keys())
-# Ensure headers match with .metagenomongo.csv headers
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -73,30 +68,20 @@ def index():
                     data = pd.read_csv(filepath, dtype=str)  # Load as strings
                 elif ext == '.xlsx':
                     data = pd.read_excel(filepath, dtype=str)  # Load as strings
-                ####
                 df_temp = data
-                    # Strip whitespace from headers
+                # Strip whitespace from headers
                 df_temp.columns = df_temp.columns.str.strip()
-                
                 # Strip whitespace from data
                 df_temp = df_temp.applymap(lambda x: x.strip() if isinstance(x, str) else x)
-                
                 # Replace NaN with empty strings
                 df_temp = df_temp.fillna('')
-                
                 # Remove fully empty rows
                 df_temp = df_temp[~(df_temp == '').all(axis=1)]
-
-                
-                
                 # Get actual headers from the temporary DataFrame
                 imported_headers = list(df_temp.columns)
-                
                 # Identify headers in the input file that do not appear in the expected headers
                 incorrect_headers = [header for header in imported_headers if header not in fields]
-                
                 if incorrect_headers:
-
                     result= {"error":"Input file contains unexpected fields :::" + ",".join(incorrect_headers)}
                     results.append(result)
                     return render_template('index.html', \
@@ -105,13 +90,7 @@ def index():
                     # No incorrect headers, just update the table
                     data_validation.validation_all(fields,\
                                     options, results, df_temp)
-
-                    sender_email = ""
-                    sender_password = ""
-                    recipient_email = ""
-                    subject = "Test Email from Python"
-                    body = "This is a test email sent from Python!"
-                    # email.send_email(sender_email, sender_password, recipient_email, subject, body)                
+                    email.send_email()                
                 return render_template('index.html', \
                     tables=[df_temp.to_html(classes='data', header="true")], \
                     fields=fields, values=values, results=results)
@@ -123,7 +102,6 @@ def index():
             result.pop("data", None)
             data_validation.validation_all( fields, options, results, data)
             return render_template('index.html', tables=[data.to_html(classes='data', header="true")], fields=fields, results=results, values=values)
-
     return render_template('index.html', tables=[], fields=fields, results=results, values=values)
 
 if __name__ == '__main__':
