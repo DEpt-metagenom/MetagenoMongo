@@ -6,6 +6,7 @@ import io
 
 import module.load as load
 import module.validation as data_validation
+import module.email as email
 
 app = Flask(__name__)
 app.secret_key = 'supersecretkey'
@@ -32,6 +33,7 @@ def save():
     mem = io.BytesIO()
     mem.write(output.getvalue().encode('utf-8'))
     mem.seek(0)
+    email.send_email() 
     return send_file(mem, mimetype='text/csv', \
                      as_attachment=True, download_name='metamongo_file.csv')
 
@@ -88,8 +90,7 @@ def index():
                 else:
                     # No incorrect headers, just update the table
                     data_validation.validation_all(fields,\
-                                    options, results, df_temp)
-                    email.send_email()                
+                                    options, results, df_temp)                                
                 return render_template('index.html', \
                     tables=[df_temp.to_html(classes='data', header="true")], \
                     fields=fields, values=values, results=results)

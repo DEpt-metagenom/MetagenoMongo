@@ -1,7 +1,7 @@
 import re
 from datetime import datetime
 
-# return number  number:message 
+DATE_FIELDS = ["collection_date", "run_date"]
 date_pattern = re.compile(r'^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}\.\d{3}Z)?$') 
 # accepted formats are YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS.fffZ
 def data_assign(fields, values):
@@ -10,15 +10,9 @@ def data_assign(fields, values):
     new_entry = []
     result = {}
     all_empty = True  # Flag to track if all input fields are empty
-    for field in fields:
-        value = values[field]
-        if value:  # Non-empty field found
-            all_empty = False
-        new_entry.append(value)
-    if all_empty:
-        result["error"] = "There is no data."
-    data.append(new_entry)
-    result["data"]=data
+    result = {"data": [list(values.values())]}
+    if not any(values.values()):
+        result["error"] = "There is no data in the row"
     return result
 
 def create_data_type_list(data_type, fields, options):
@@ -64,39 +58,28 @@ def validation_all(fields, options, results, df_temp):
                     data[row_index][col_index] = cell
                     corrected_count += 1
                     corrected_items.append(f'Row {row_index + 1}, Column {col_index + 1}: {original_cell} -> {cell}')
-            
-            elif isinstance(cell, datetime):  # Handle datetime objects separately
-                original_cell = cell
-                cell = cell.strftime('%Y-%m-%d %H:%M:%S')
-                if cell != original_cell:
-                    data[row_index][col_index] = cell
-                    corrected_count += 1
-                    corrected_items.append(f'Row {row_index + 1}, Column {col_index + 1}: {original_cell} -> {cell}')
     # Validate data
     for row_index, row in enumerate(data):
         for col_index, cell in enumerate(row):
             field = fields[col_index]
             if isinstance(cell, str):
-                if field in ["collection_date", "run_date"]:
-                    
+                if field in DATE_FIELDS:
                     if not date_pattern.match(cell):
-                        invalid_date_messages.append(f"Invalid date in row {row_index + 1}, column '{field}': '{cell}'")
+                        invalid_date_messages.append(f"Invalid value in row {row_index + 1}, column '{field}': Expected data type: date")
                 if field in options and options[field]['combobox_type'] == 'fix' and options[field]['options']:
                     if cell not in options[field]['options']:
-                        invalid_combobox_messages.append(f"Invalid fixed option in row {row_index + 1}, column '{field}': '{cell}'")
+                        invalid_combobox_messages.append(f"Invalid value in row {row_index + 1}, column '{field}': Possible values are: '{options[field]['options']}'")
                 if field in int_dynamic_type:
                     if cell != "":
                         if not cell.isdigit():
-                            invalid_combobox_messages.append(f"Invalid data type in row {row_index + 1}, column '{field}': '{cell}': Expected data type: int")
+                            invalid_combobox_messages.append(f"Invalid data type in row {row_index + 1}, column '{field}': Expected data type: int")
                 if field in float_dynamic_type:
                     if cell != "":
                         try:
                             float(cell)
                         except ValueError:
-                            invalid_combobox_messages.append(f"Invalid data type in row {row_index + 1}, column '{field}': '{cell}': Expected data type: float")
+                            invalid_combobox_messages.append(f"Invalid data type in row {row_index + 1}, column '{field}': Expected data type: float")
     
-    # Remove rows that are entirely empty
-    data = [row for row in data if any(cell.strip() for cell in row)]
     # Prepare result text
     if len(invalid_date_messages) != 0 or len(invalid_combobox_messages) != 0:
         result_text = (
