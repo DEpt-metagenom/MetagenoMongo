@@ -1,2 +1,8 @@
 .venv/
 testdata/
+venv/
+*.csv
+samples/
+__pycache__/
+*.xlsx
+upload/

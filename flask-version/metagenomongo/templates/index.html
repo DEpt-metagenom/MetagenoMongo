@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>MetagenoMongo v1.0</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="../static/styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Metageno <strong>Mongo</strong></h1>
+        <div class="container-fluid">
+            <div class="row no-gutters">
+                <div class="col-md-4 left-side">
+                    <!-- Left side content here -->
+                    <form method="post" enctype="multipart/form-data" action="/" id="input_form">
+                            <div class="scrollable-section">
+                            {% for field in fields %}
+                                <div class="form-group">
+                                    <label class="form-label" for="{{ field }}">{{ field }}:</label>
+                                {% if values["default"] == 0%}
+                                    <input type="text" class="form-control" id="{{ field }}" name="{{ field }}">
+                                {% else %}
+                                    <input type="text" class="form-control" id="{{ field }}" name="{{ field }}" value="{{ values[field]}}">
+                                {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                        <div class="d-grid col-6 mx-auto pt-3">
+                            <button type="submit" class="btn btn-info" id="add">Add/Update</button>
+                        </div>
+                    </form>
+                </div>
+                <div class="col-md-8 right-side d-flex flex-column">
+                    <div class="top-half">
+                        <!-- Top half content here -->
+                        <form method="post" enctype="multipart/form-data" class="mt-3 csv-upload">
+                            <div class="form-group">
+                                <label for="file">Upload CSV File</label>
+                                <input type="file" class="form-control-file" id="file" name="file">
+                            </div>
+                            <button type="submit" class="btn btn-success w-25 h-25">Import file</button>
+                        </form>
+                        {% if tables %}
+                        <div class="table-container">
+                            <div class="table table-hover table-sm">
+
+                                {% for table in tables %}
+                                <div class="table-responsive">
+                                    {{ table|safe }}
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% if not results%}
+                        <form action="/save" method="post">
+                            <input type="hidden" name="csv_data" value="{{ tables[0] }}">
+                            <div class="d-grid col-6 mx-auto">
+                                <button type="submit">Save as csv</button>
+                            </div>
+                        </form>
+                        {% else %}
+                        <form action="/correct" method="post">
+                            <input type="hidden" id="table_data" value="{{ tables[0] }}">
+                            <div class="d-grid col-6 mx-auto">
+                                <button type="submit" id="correct_btn">correct</button>
+                            </div>
+                        </form>
+                        {% endif %}
+                        
+                        {% endif %}
+                    </div>
+                    <div class="bottom-half">
+                        <!-- Bottom half content here -->
+                        <div class="result">             
+                            {% for result in results %}
+                            <p> {{ result.error }} </p>
+                            <p> {{ result.data }} </p>
+                            {% endfor %}
+                        </div>
+                        
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+    </div>
+    <script src="../static/index.js"></script>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>
