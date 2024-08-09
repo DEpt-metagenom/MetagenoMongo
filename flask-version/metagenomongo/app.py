@@ -48,7 +48,7 @@ def correct():
     data = data.fillna("")
     data = data.astype(str)
     data_validation.validation_all(fields, options, results, data)
-    return render_template('index.html', tables=[data.to_html(classes='data', header="true")], fields=fields, results=results, values=values)
+    return render_template('index_with_table.html', tables=[data.to_html(classes='data', header="true")], fields=fields, results=results, values=values)
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -91,7 +91,7 @@ def index():
                     # No incorrect headers, just update the table
                     data_validation.validation_all(fields,\
                                     options, results, df_temp)                                
-                return render_template('index.html', \
+                return render_template('index_with_table.html', \
                     tables=[df_temp.to_html(classes='data', header="true")], \
                     fields=fields, values=values, results=results)
         # Handle manual data entry
@@ -101,7 +101,7 @@ def index():
             data = pd.DataFrame(result["data"],columns=fields)
             result.pop("data", None)
             data_validation.validation_all( fields, options, results, data)
-            return render_template('index.html', tables=[data.to_html(classes='data', header="true")], fields=fields, results=results, values=values)
+            return render_template('index_with_table.html', tables=[data.to_html(classes='data', header="true")], fields=fields, results=results, values=values)
     return render_template('index.html', tables=[], fields=fields, results=results, values=values)
 
 if __name__ == '__main__':

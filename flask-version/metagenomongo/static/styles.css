@@ -2,7 +2,9 @@ body {
     font-family: Arial, sans-serif;
     background-color: #f4f4f4;
     color: #333;
-    height: 100;
+}
+a,a:visited{
+    color: inherit;
 }
 
 .container {
