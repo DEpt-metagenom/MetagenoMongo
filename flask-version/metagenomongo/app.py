@@ -23,6 +23,29 @@ def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[-1].lower() in ALLOWED_EXTENSIONS
 
+@app.route('/change', methods=['POST'])
+def change():
+    form_data = request.form
+    data_list = []
+    tmp = []
+    count = 0
+    for key, value in form_data.items():
+        tmp.append(value)
+        count += 1
+        if count == 86:
+            data_list.append(tmp)
+            tmp = []
+            count = 0
+    print(data_list)
+    # return redirect("/")
+    results = []
+    values = {"default": 0}
+    data = pd.DataFrame(data_list, columns=fields)
+    data_validation.validation_all( fields, options, results, data)
+    return render_template('index_with_table.html', \
+                    tables=[data.to_html(classes='data', header="true")], fields=fields, results=results, values=values, df=data)
+
+
 @app.route('/save', methods=['GET', 'POST'])
 def save():
     csv_data = request.form['csv_data']
@@ -93,7 +116,7 @@ def index():
                                     options, results, df_temp)                                
                 return render_template('index_with_table.html', \
                     tables=[df_temp.to_html(classes='data', header="true")], \
-                    fields=fields, values=values, results=results)
+                    fields=fields, values=values, results=results, df=df_temp)
         # Handle manual data entry
         if request.form:
             values = request.form
@@ -101,7 +124,8 @@ def index():
             data = pd.DataFrame(result["data"],columns=fields)
             result.pop("data", None)
             data_validation.validation_all( fields, options, results, data)
-            return render_template('index_with_table.html', tables=[data.to_html(classes='data', header="true")], fields=fields, results=results, values=values)
+            return render_template('index_with_table.html', \
+                    tables=[data.to_html(classes='data', header="true")], fields=fields, results=results, values=values, df=data)
     return render_template('index.html', tables=[], fields=fields, results=results, values=values)
 
 if __name__ == '__main__':

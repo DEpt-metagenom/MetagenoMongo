@@ -26,14 +26,14 @@
                         </div>
                         {% if not results%}
                         <form action="/save" method="post">
-                            <input type="hidden" name="csv_data" value="{{ tables[0] }}">
+                            <input type="textarea" name="csv_data" value="{{ tables[0] }}">
                             <div class="d-grid col-6 mx-auto">
                                 <button type="submit">Save as csv</button>
                             </div>
                         </form>
                         {% else %}
                         <form action="/correct" method="post">
-                            <input type="hidden" name="csv_data" value="{{ tables[0] }}">
+                            <input type="textarea" name="csv_data" value="{{ tables[0] }}">
                             <div class="d-grid col-6 mx-auto">
                                 <button type="submit" id="correct_btn">correct</button>
                             </div>
@@ -44,6 +44,24 @@
                     </div>
                     <div class="bottom-half">
                         <!-- Bottom half content here -->
+                        <form method="post" action="change">
+                            <table>
+                                <tr>
+                                    {% for col in df.columns %}
+                                        <th>{{ col }}</th>
+                                    {% endfor %}
+                                </tr>
+                                {% for row in range(df.shape[0]) %}
+                                    <tr>
+                                        {% for col in range(df.shape[1]) %}
+                                            <td>
+                                                <input type="text" name="{{ row }}_{{ col }}" value="{{ df.iloc[row, col] }}">
+                                            </td>
+                                        {% endfor %}
+                                    </tr>
+                                {% endfor %}
+                            </table>
+                            <input type="submit" value="Save Changes">
                         <div class="result">             
                             {% for result in results %}
                             <p> {{ result.error }} </p>
