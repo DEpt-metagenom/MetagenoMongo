@@ -102,16 +102,19 @@ def index():
                 # Remove fully empty rows
                 df_temp = df_temp[~(df_temp == '').all(axis=1)]
                 # Get actual headers from the temporary DataFrame
-                imported_headers = list(df_temp.columns)
+                imported_fields = list(df_temp.columns)
                 # Identify headers in the input file that do not appear in the expected headers
-                incorrect_headers = [header for header in imported_headers if header not in fields]
-                if incorrect_headers:
-                    result= {"error":"Input file contains unexpected fields :::" + ",".join(incorrect_headers)}
+                incorrect_fields = [header for header in imported_fields if header not in fields]
+                if incorrect_fields:
+                    result= {"error":"Input file contains unexpected fields :::" + ",".join(incorrect_fields)}
                     results.append(result)
                     return render_template('index.html', \
                     fields=fields, values=values, results=results)
                 else:
                     # No incorrect headers, just update the table
+                    for col in fields:
+                        if col not in imported_fields:
+                            df_temp[col] = ""
                     data_validation.validation_all(fields,\
                                     options, results, df_temp)                                
                 return render_template('index_with_table.html', \
