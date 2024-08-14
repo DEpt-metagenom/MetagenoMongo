@@ -36,7 +36,6 @@ def change():
             data_list.append(tmp)
             tmp = []
             count = 0
-    print(data_list)
     # return redirect("/")
     results = []
     values = {"default": 0}
@@ -76,6 +75,7 @@ def correct():
 @app.route('/', methods=['GET', 'POST'])
 def index():
     # row, column_name, error type
+    global fields
     data = pd.DataFrame()
     results = []
     values = {"default": 0}
@@ -115,6 +115,7 @@ def index():
                     for col in fields:
                         if col not in imported_fields:
                             df_temp[col] = ""
+                    fields = [col for col in df_temp]
                     data_validation.validation_all(fields,\
                                     options, results, df_temp)                                
                 return render_template('index_with_table.html', \
@@ -122,6 +123,7 @@ def index():
                     fields=fields, values=values, results=results, df=df_temp)
         # Handle manual data entry
         if request.form:
+            fields = list(options.keys())
             values = request.form
             result = data_validation.data_assign(fields, values)
             data = pd.DataFrame(result["data"],columns=fields)
