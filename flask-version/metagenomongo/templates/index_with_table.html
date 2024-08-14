@@ -13,34 +13,6 @@
                             </div>
                             <button type="submit" class="btn btn-success w-25 h-25">Import file</button>
                         </form>
-                        {% if tables %}
-                        <div class="table-container">
-                            <div class="table table-hover table-sm">
-
-                                {% for table in tables %}
-                                <div class="table-responsive">
-                                    {{ table|safe }}
-                                </div>
-                                {% endfor %}
-                            </div>
-                        </div>
-                        {% if not results%}
-                        <form action="/save" method="post">
-                            <input type="textarea" name="csv_data" value="{{ tables[0] }}">
-                            <div class="d-grid col-6 mx-auto">
-                                <button type="submit">Save as csv</button>
-                            </div>
-                        </form>
-                        {% else %}
-                        <form action="/correct" method="post">
-                            <input type="textarea" name="csv_data" value="{{ tables[0] }}">
-                            <div class="d-grid col-6 mx-auto">
-                                <button type="submit" id="correct_btn">correct</button>
-                            </div>
-                        </form>
-                        {% endif %}
-                        
-                        {% endif %}
                     </div>
                     <div class="bottom-half">
                         <!-- Bottom half content here -->
@@ -68,7 +40,19 @@
                             <p> {{ result.data }} </p>
                             {% endfor %}
                         </div>
-                        
+                        {% if not results%}
+                        <form action="/save" method="post">
+                            <div class="d-grid col-6 mx-auto">
+                                <button type="submit">Save as csv</button>
+                            </div>
+                        </form>
+                        {% else %}
+                        <form action="/correct" method="post">
+                            <div class="d-grid col-6 mx-auto">
+                                <button type="submit" id="correct_btn">correct</button>
+                            </div>
+                        </form>
+                        {% endif %}
                     </div>
                 </div>
             </div>
