@@ -7,6 +7,7 @@ import io
 import module.load as load
 import module.validation as data_validation
 import module.email as email
+import datetime
 
 app = Flask(__name__)
 app.secret_key = os.getenv('FLASK_SK')
@@ -66,8 +67,10 @@ def save():
     mem.write(output.getvalue().encode('utf-8'))
     mem.seek(0)
     email.send_email() 
+    current_time = datetime.datetime.now()
+    file_name= current_time.strftime('%Y-%m-%d-%H:%M:%S') +".csv"
     return send_file(mem, mimetype='text/csv', \
-                     as_attachment=True, download_name='metamongo_file.csv')
+                     as_attachment=True, download_name=file_name)
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
