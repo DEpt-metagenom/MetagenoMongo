@@ -90,6 +90,9 @@ input[type="file"] {
     border: 1px solid #dee2e6;
     border-radius: 4px;
 }
+.table-wrap {
+    overflow-x: scroll;
+}
 
 table {
     width: 100%;

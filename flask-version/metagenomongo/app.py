@@ -47,8 +47,18 @@ def change():
 
 @app.route('/save', methods=['GET', 'POST'])
 def save():
-    csv_data = request.form['csv_data']
-    df = pd.read_html(csv_data, index_col=None)[0]
+    form_data = request.form
+    data_list = []
+    tmp = []
+    count = 0
+    for key, value in form_data.items():
+        tmp.append(value)
+        count += 1
+        if count == 86:
+            data_list.append(tmp)
+            tmp = []
+            count = 0
+    df= pd.DataFrame(data_list, columns=fields)
     df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
     output = io.StringIO()
     df.to_csv(output, index=False)
@@ -58,19 +68,6 @@ def save():
     email.send_email() 
     return send_file(mem, mimetype='text/csv', \
                      as_attachment=True, download_name='metamongo_file.csv')
-
-@app.route('/correct', methods=['GET', 'POST'])
-def correct():
-    results = []
-    values = {"default": 0}
-    values = request.form
-    csv_data = request.form['csv_data']
-    data = pd.read_html(csv_data, index_col=None)[0]
-    data = data.loc[:, ~data.columns.str.contains('^Unnamed')]
-    data = data.fillna("")
-    data = data.astype(str)
-    data_validation.validation_all(fields, options, results, data)
-    return render_template('index_with_table.html', tables=[data.to_html(classes='data', header="true")], fields=fields, results=results, values=values)
 
 @app.route('/', methods=['GET', 'POST'])
 def index():

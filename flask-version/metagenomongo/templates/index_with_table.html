@@ -16,8 +16,9 @@
                     </div>
                     <div class="bottom-half">
                         <!-- Bottom half content here -->
-                        <form method="post" action="change">
-                            <table>
+                        <form method="post">
+                            <div class="table-wrap">
+                                <table>
                                 <tr>
                                     {% for col in df.columns %}
                                         <th>{{ col }}</th>
@@ -32,27 +33,26 @@
                                         {% endfor %}
                                     </tr>
                                 {% endfor %}
-                            </table>
-                            <input type="submit" value="Save Changes">
+                                </table>
+                            </div>
+                            
+                            {% if not results%}
+                                <div class="d-grid col-6 mx-auto">
+                                    <button type="submit" formaction="/save">Save as csv</button>
+                                </div>
+                            {% else %}
+                                <div class="d-grid col-6 mx-auto"></div>
+                                    <input type="submit" value="Save Changes" formaction="/change">
+                                </div>
+                            {% endif %}
                         <div class="result">             
                             {% for result in results %}
                             <p> {{ result.error }} </p>
                             <p> {{ result.data }} </p>
                             {% endfor %}
                         </div>
-                        {% if not results%}
-                        <form action="/save" method="post">
-                            <div class="d-grid col-6 mx-auto">
-                                <button type="submit">Save as csv</button>
-                            </div>
+                        
                         </form>
-                        {% else %}
-                        <form action="/correct" method="post">
-                            <div class="d-grid col-6 mx-auto">
-                                <button type="submit" id="correct_btn">correct</button>
-                            </div>
-                        </form>
-                        {% endif %}
                     </div>
                 </div>
             </div>
