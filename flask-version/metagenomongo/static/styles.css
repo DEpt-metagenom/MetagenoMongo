@@ -122,3 +122,21 @@ tr:nth-child(even) {
 tr:hover {
     background-color: #e9ecef;
 }
+.scrollable-section {
+    overflow-x: auto;
+    white-space: nowrap;
+}
+
+.form-row {
+    display: inline-flex;
+    flex-wrap: nowrap;
+}
+
+.form-group {
+    margin-left: 10px;
+    flex: 0 0 auto;
+}
+
+.form-label {
+    display: block;
+}

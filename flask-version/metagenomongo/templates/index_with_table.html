@@ -38,6 +38,7 @@
                             
                             {% if not results%}
                                 <div class="d-grid col-6 mx-auto">
+                                    <input type="text" name="user_name" placeholder="user_name" required>
                                     <button type="submit" formaction="/save">Save as csv</button>
                                 </div>
                             {% else %}
