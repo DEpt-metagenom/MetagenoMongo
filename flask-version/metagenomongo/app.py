@@ -10,7 +10,10 @@ import module.email as email
 import datetime
 
 app = Flask(__name__)
-app.secret_key = os.getenv('FLASK_SK')
+secret_key = os.getenv('FLASK_SK')
+if not secret_key:
+    raise ValueError("FLASK_SK environment variable is not set")
+app.secret_key = secret_key
 UPLOAD_FOLDER = 'uploads'
 ALLOWED_EXTENSIONS = {'csv', 'xlsx'}
 
