@@ -69,7 +69,7 @@ def save():
     mem = io.BytesIO()
     mem.write(output.getvalue().encode('utf-8'))
     mem.seek(0)
-    #email.send_email() 
+    email.send_email() 
     current_time = datetime.datetime.now()
     file_name= form_data["user_name"] + current_time.strftime('_%Y-%m-%d-%H:%M:%S') +".csv"
     return send_file(mem, mimetype='text/csv', \
