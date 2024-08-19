@@ -122,10 +122,6 @@ tr:nth-child(even) {
 tr:hover {
     background-color: #e9ecef;
 }
-.scrollable-section {
-    overflow-x: auto;
-    white-space: nowrap;
-}
 
 .form-row {
     display: inline-flex;
