@@ -16,6 +16,7 @@ if not secret_key:
 app.secret_key = secret_key
 UPLOAD_FOLDER = 'uploads'
 ALLOWED_EXTENSIONS = {'csv', 'xlsx'}
+REGISTERED_USERS = ("user_a", "user_b", "student")
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -55,6 +56,14 @@ def change():
 @app.route('/save', methods=['GET', 'POST'])
 def save():
     data_list = parse_form_data()
+    user_name = request.form["user_name"]
+    values = {"default": 0}
+    if user_name not in REGISTERED_USERS:
+        results = []
+        results.append({'error':'unauthorized user'})
+        data = pd.DataFrame(data_list, columns=fields)
+        return render_template('index_with_table.html', \
+                    tables=[data.to_html(classes='data', header="true")], fields=fields, results=results, values=values, df=data)
     df= pd.DataFrame(data_list, columns=fields)
     df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
     output = io.StringIO()
@@ -64,7 +73,7 @@ def save():
     mem.seek(0)
     email.send_email() 
     current_time = datetime.datetime.now()
-    file_name= request.form["user_name"] + current_time.strftime('_%Y-%m-%d-%H:%M:%S') +".csv"
+    file_name= user_name + current_time.strftime('_%Y-%m-%d-%H:%M:%S') +".csv"
     return send_file(mem, mimetype='text/csv', \
                      as_attachment=True, download_name=file_name)
 
