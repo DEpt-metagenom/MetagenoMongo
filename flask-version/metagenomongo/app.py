@@ -27,8 +27,7 @@ def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[-1].lower() in ALLOWED_EXTENSIONS
 
-@app.route('/change', methods=['POST'])
-def change():
+def parse_form_data():
     form_data = request.form
     data_list = []
     tmp = []
@@ -40,7 +39,11 @@ def change():
             data_list.append(tmp)
             tmp = []
             count = 0
-    # return redirect("/")
+    return data_list
+
+@app.route('/change', methods=['POST'])
+def change():
+    data_list = parse_form_data()
     results = []
     values = {"default": 0}
     data = pd.DataFrame(data_list, columns=fields)
@@ -51,17 +54,7 @@ def change():
 
 @app.route('/save', methods=['GET', 'POST'])
 def save():
-    form_data = request.form
-    data_list = []
-    tmp = []
-    count = 0
-    for key, value in form_data.items():
-        tmp.append(value)
-        count += 1
-        if count == 86:
-            data_list.append(tmp)
-            tmp = []
-            count = 0
+    data_list = parse_form_data()
     df= pd.DataFrame(data_list, columns=fields)
     df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
     output = io.StringIO()
@@ -71,7 +64,7 @@ def save():
     mem.seek(0)
     email.send_email() 
     current_time = datetime.datetime.now()
-    file_name= form_data["user_name"] + current_time.strftime('_%Y-%m-%d-%H:%M:%S') +".csv"
+    file_name= request.form["user_name"] + current_time.strftime('_%Y-%m-%d-%H:%M:%S') +".csv"
     return send_file(mem, mimetype='text/csv', \
                      as_attachment=True, download_name=file_name)
 
