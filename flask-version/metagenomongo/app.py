@@ -71,7 +71,6 @@ def save():
 @app.route('/', methods=['GET', 'POST'])
 def index():
     # row, column_name, error type
-    global fields
     data = pd.DataFrame()
     results = []
     values = {"default": 0}
@@ -85,10 +84,9 @@ def index():
                 file.save(filepath)
                 _, ext = os.path.splitext(file.filename)
                 if ext == '.csv':
-                    data = pd.read_csv(filepath, dtype=str)  # Load as strings
+                    df_temp = pd.read_csv(filepath, dtype=str)  # Load as strings
                 elif ext == '.xlsx':
-                    data = pd.read_excel(filepath, dtype=str)  # Load as strings
-                df_temp = data
+                    df_temp = pd.read_excel(filepath, dtype=str)  # Load as strings
                 # Strip whitespace from headers
                 df_temp.columns = df_temp.columns.str.strip()
                 # Strip whitespace from data
@@ -108,10 +106,7 @@ def index():
                     fields=fields, values=values, results=results)
                 else:
                     # No incorrect headers, just update the table
-                    for col in fields:
-                        if col not in imported_fields:
-                            df_temp[col] = ""
-                    fields = [col for col in df_temp]
+                    df_temp = df_temp.reindex(columns=fields, fill_value='')
                     data_validation.validation_all(fields,\
                                     options, results, df_temp)                                
                 return render_template('index_with_table.html', \
@@ -119,7 +114,6 @@ def index():
                     fields=fields, values=values, results=results, df=df_temp)
         # Handle manual data entry
         if request.form:
-            fields = list(options.keys())
             values = request.form
             result = data_validation.data_assign(fields, values)
             data = pd.DataFrame(result["data"],columns=fields)
