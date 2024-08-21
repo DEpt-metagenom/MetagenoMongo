@@ -151,6 +151,11 @@ def index():
                     df_temp = pd.read_csv(filepath, dtype=str)  # Load as strings
                 elif ext == '.xlsx':
                     df_temp = pd.read_excel(filepath, dtype=str)  # Load as strings
+                else:
+                    results = []
+                    results.append({'error':'unauthorized user. Please contact the database admin'})
+                    return render_template('index_with_table.html', \
+                    tables=[data.to_html(classes='data', header="true")], fields=fields, results=results, values=values, df=data)
                 # Strip whitespace from headers
                 df_temp.columns = df_temp.columns.str.strip()
                 # Strip whitespace from data
