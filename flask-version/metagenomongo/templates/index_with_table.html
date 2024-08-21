@@ -27,9 +27,16 @@
                                 {% for row in range(df.shape[0]) %}
                                     <tr>
                                         {% for col in range(df.shape[1]) %}
+                                        {% if col == 0%}
+                                            <td>
+                                            <input type="hidden" name="{{ row }}_{{ col }}" value="{{ df.iloc[row, col] }}">
+                                            <div>{{ df.iloc[row, col] }}</div>
+                                            </td>
+                                        {% else %}
                                             <td>
                                                 <input type="text" name="{{ row }}_{{ col }}" value="{{ df.iloc[row, col] }}">
                                             </td>
+                                        {% endif %}
                                         {% endfor %}
                                     </tr>
                                 {% endfor %}
