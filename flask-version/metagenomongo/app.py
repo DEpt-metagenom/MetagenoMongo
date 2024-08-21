@@ -154,7 +154,7 @@ def index():
                 else:
                     os.remove(filepath)
                     results = []
-                    results.append({'error':'unauthorized user. Please contact the database admin'})
+                    results.append({'error':'Invalid file type'})
                     return render_template('index_with_table.html', \
                     tables=[data.to_html(classes='data', header="true")], fields=fields, results=results, values=values, df=data)
                 # Strip whitespace from headers
