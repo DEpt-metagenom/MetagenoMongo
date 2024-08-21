@@ -1,13 +1,14 @@
-from flask import Flask, request, render_template, redirect, url_for, send_file
+from flask import Flask, request, render_template, send_file
 import os
 import pandas as pd
 from werkzeug.utils import secure_filename
 import io
+import datetime
+import subprocess
 
 import module.load as load
 import module.validation as data_validation
 import module.email as email
-import datetime
 
 app = Flask(__name__)
 secret_key = os.getenv('FLASK_SK')
@@ -42,6 +43,20 @@ def parse_form_data():
             count = 0
     return data_list
 
+def save_file_server(output_value,file_name):
+    local_path = file_name + '.csv'
+    with open(local_path, 'w', encoding='utf-8') as f:
+        f.write(output_value)
+    remote_path = os.getenv('META_REMOTE_PATH')
+    key_path = os.getenv('META_KEY_PATH')
+    scp_command = ['scp', '-i', key_path, local_path, remote_path]
+    try:
+        subprocess.run(scp_command, check=True)
+        print(f"File successfully transferred to {remote_path}")
+    except subprocess.CalledProcessError as e:
+        print(f"An error occurred: {e}")
+
+
 @app.route('/change', methods=['POST'])
 def change():
     data_list = parse_form_data()
@@ -73,7 +88,8 @@ def save():
     mem.seek(0)
     email.send_email() 
     current_time = datetime.datetime.now()
-    file_name= user_name + current_time.strftime('_%Y-%m-%d-%H:%M:%S') +".csv"
+    file_name = user_name + current_time.strftime('_%Y-%m-%d-%H:%M:%S') +".csv"
+    save_file_server(output.getvalue(),file_name)
     return send_file(mem, mimetype='text/csv', \
                      as_attachment=True, download_name=file_name)
 
