@@ -152,6 +152,7 @@ def index():
                 elif ext == '.xlsx':
                     df_temp = pd.read_excel(filepath, dtype=str)  # Load as strings
                 else:
+                    os.remove(filepath)
                     results = []
                     results.append({'error':'unauthorized user. Please contact the database admin'})
                     return render_template('index_with_table.html', \
@@ -177,7 +178,8 @@ def index():
                     # No incorrect headers, just update the table
                     df_temp = df_temp.reindex(columns=fields, fill_value='')
                     data_validation.validation_all(fields,\
-                                    options, results, df_temp)                                
+                                    options, results, df_temp)  
+                os.remove(filepath)                              
                 return render_template('index_with_table.html', \
                     tables=[df_temp.to_html(classes='data', header="true")], \
                     fields=fields, values=values, results=results, df=df_temp)
