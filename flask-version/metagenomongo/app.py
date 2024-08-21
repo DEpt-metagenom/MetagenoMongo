@@ -68,7 +68,6 @@ def check_user(user_name):
     user_hash.update(user_name.encode())
     return user_hash.hexdigest() in user_hashes
 
-
 def parse_form_data():
     form_data = request.form
     data_list = []
