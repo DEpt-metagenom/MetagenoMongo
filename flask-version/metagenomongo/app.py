@@ -134,14 +134,20 @@ def save():
     data_list = parse_form_data(request.form)
     user_name = request.form["user_name"]
     values = {"default": 0}
+    results = []
     if not check_user(user_name):
-        results = []
         results.append({'error':'unauthorized user. Please contact the database admin'})
         data = pd.DataFrame(data_list, columns=fields)
         return render_template('index_with_table.html', \
                     tables=[data.to_html(classes='data', header="true")], fields=fields, results=results, values=values, df=data)
-    df= pd.DataFrame(data_list, columns=fields)
+    df = pd.DataFrame(data_list, columns=fields)
     df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
+    data_validation.validation_all( fields, options, results, df)
+    if results:
+        return render_template('index_with_table.html', \
+            tables=[df.to_html(classes='data', header="true")], \
+            fields=fields, results=results, values=values, \
+            df=df, user_name=request.form["user_name"])
     output = io.StringIO()
     df.to_csv(output, index=False)
     mem = io.BytesIO()

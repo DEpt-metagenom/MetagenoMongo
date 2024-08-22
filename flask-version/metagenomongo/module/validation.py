@@ -28,6 +28,7 @@ def validation_all(fields, options, results, df_temp):
     data = df_temp.values.tolist()
     int_dynamic_type = create_data_type_list("int", fields, options)
     float_dynamic_type = create_data_type_list("float", fields, options)
+    sampleID_list = []
     # Apply corrections to data
     for row_index, row in enumerate(data):
         for col_index, cell in enumerate(row):
@@ -44,7 +45,6 @@ def validation_all(fields, options, results, df_temp):
                     cell = cell.capitalize()
                 elif fields[col_index] == "if_repeated":
                     cell = "y" if cell.lower() == "yes" else "n" if cell.lower() == "no" else cell
-                
                 if cell != original_cell:
                     data[row_index][col_index] = cell
                     corrected_count += 1
@@ -63,14 +63,24 @@ def validation_all(fields, options, results, df_temp):
                 if field in int_dynamic_type:
                     if cell != "":
                         if not cell.isdigit():
-                            invalid_combobox_messages.append(f"Invalid data type in row {row_index + 1}, column '{field}': Expected data type: int")
+                            invalid_combobox_messages.append(\
+                            f"Invalid data type in row {row_index + 1}, column '{field}': Expected data type: int")
                 if field in float_dynamic_type:
                     if cell != "":
                         try:
                             float(cell)
                         except ValueError:
-                            invalid_combobox_messages.append(f"Invalid data type in row {row_index + 1}, column '{field}': Expected data type: float")
-    
+                            invalid_combobox_messages.append(\
+                            f"Invalid data type in row {row_index + 1}, column '{field}': Expected data type: float")
+                # check sampleID
+                if field == "sampleID":
+                    if cell in sampleID_list:
+                        invalid_combobox_messages.append(\
+                            f"There are duplicate SampleID in row {row_index + 1}, column '{field}':")
+                    elif cell == "":
+                        invalid_combobox_messages.append(\
+                            f"SampleID is necessary in row {row_index + 1}, column '{field}':")
+                    sampleID_list.append(cell)
     # Prepare result text
     if len(invalid_date_messages) != 0 or len(invalid_combobox_messages) != 0:
         result_text = (
