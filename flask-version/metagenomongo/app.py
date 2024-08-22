@@ -69,8 +69,7 @@ def check_user(user_name):
     user_hash.update(user_name.encode())
     return user_hash.hexdigest() in user_hashes
 
-def parse_form_data():
-    form_data = request.form
+def parse_form_data(form_data):
     data_list = []
     tmp = []
     count = 0
@@ -96,21 +95,43 @@ def save_file_server(output_value,file_name):
     except subprocess.CalledProcessError as e:
         print(f"An error occurred: {e}")
 
+def empty_check(last_data):
+    for n in last_data:
+        if n != "":
+            return True
+    return False
 
 @app.route('/change', methods=['POST'])
 def change():
-    data_list = parse_form_data()
+    data_list = parse_form_data(request.form)
     results = []
     values = {"default": 0}
     data = pd.DataFrame(data_list, columns=fields)
     data_validation.validation_all( fields, options, results, data)
     return render_template('index_with_table.html', \
-                    tables=[data.to_html(classes='data', header="true")], fields=fields, results=results, values=values, df=data)
+                tables=[data.to_html(classes='data', header="true")], \
+                fields=fields, results=results, values=values, \
+                df=data, user_name=request.form["user_name"])
 
+@app.route('/addLine', methods=['POST'])
+def addLine():
+    data_list = parse_form_data(request.form)
+    results = []
+    values = {"default": 0}
+    data = pd.DataFrame(data_list, columns=fields)
+    data_validation.validation_all( fields, options, results, data)
+    new_data = data.iloc[-1]
+    if empty_check(new_data):
+        data.loc[len(data)] = new_data
+        data.at[len(data)-1,'sampleID'] = ''
+    return render_template('index_with_table.html', \
+                tables=[data.to_html(classes='data', header="true")], \
+                fields=fields, results=results, values=values, \
+                df=data, user_name=request.form["user_name"])
 
 @app.route('/save', methods=['GET', 'POST'])
 def save():
-    data_list = parse_form_data()
+    data_list = parse_form_data(request.form)
     user_name = request.form["user_name"]
     values = {"default": 0}
     if not check_user(user_name):
@@ -188,22 +209,36 @@ def index():
                     tables=[data.to_html(classes='data', header="true")], fields=fields, results=results, values=values, df=data)                           
                 return render_template('index_with_table.html', \
                     tables=[df_temp.to_html(classes='data', header="true")], \
-                    fields=fields, values=values, results=results, df=df_temp)
+                    fields=fields, values=values, results=results, df=df_temp, user_name=user_name)
         # Handle manual data entry
         if request.form:
             values = MultiDict(request.form)
+            values.popitem()
             values.popitem()
             result = data_validation.data_assign(fields, values)
             data = pd.DataFrame(result["data"],columns=fields)
             result.pop("data", None)
             data_validation.validation_all( fields, options, results, data)
             user_name = request.form["user_name"]
+            action = request.form["action"]
             if not check_user(user_name):
                 results.append({'error':'unauthorized user. Please contact the database admin'})
                 return render_template('index.html', \
                     tables=[data.to_html(classes='data', header="true")], fields=fields, results=results, values=values, df=data)
+            # action = new_line or validate
+            if action == "new_line":
+                new_data = data.iloc[-1]
+                if empty_check(new_data):
+                    data.loc[len(data)] = new_data
+                    data.at[len(data)-1,'sampleID'] = ''
+                    return render_template('index_with_table.html', \
+                    tables=[data.to_html(classes='data', header="true")], fields=fields, results=results, values=values, df=data, user_name=user_name)
+                else:
+                    results.append({'error':'No data available.'})
+                    return render_template('index_with_table.html', \
+                    tables=[data.to_html(classes='data', header="true")], fields=fields, results=results, values=values, df=data, user_name=user_name)
             return render_template('index_with_table.html', \
-                    tables=[data.to_html(classes='data', header="true")], fields=fields, results=results, values=values, df=data)
+                    tables=[data.to_html(classes='data', header="true")], fields=fields, results=results, values=values, df=data, user_name=user_name)
     return render_template('index.html', tables=[], fields=fields, results=results, values=values)
 
 if __name__ == '__main__':
