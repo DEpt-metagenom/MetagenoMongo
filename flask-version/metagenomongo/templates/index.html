@@ -8,14 +8,14 @@
                         <div class="scrollable-section">
                             <div class="form-row">
                                 {% for field in fields %}
-                                <div class="form-group">
-                                    <label class="form-label" for="{{ field }}">{{ field }}:</label>
-                                    {% if values["default"] == 0 %}
-                                    <input type="text" class="form-control" id="{{ field }}" name="{{ field }}">
-                                    {% else %}
-                                    <input type="text" class="form-control" id="{{ field }}" name="{{ field }}" value="{{ values[field] }}">
-                                    {% endif %}
-                                </div>
+                                    <div class="form-group">
+                                        <label class="form-label" for="{{ field }}">{{ field }}:</label>
+                                        {% if field == "_id"%}
+                                        <input type="hidden" class="form-control" id="{{ field }}" name="{{ field }}" value="">
+                                        {% else %}
+                                        <input type="text" class="form-control" id="{{ field }}" name="{{ field }}">
+                                        {% endif %}
+                                    </div>
                                 {% endfor %}
                             </div>
                         </div>
