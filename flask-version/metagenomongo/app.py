@@ -156,7 +156,7 @@ def save():
     email.send_email() 
     current_time = datetime.datetime.now()
     file_name = user_name + current_time.strftime('_%Y-%m-%d-%H:%M:%S') +".csv"
-
+    save_file_server(output.getvalue().encode('utf-8'),file_name)
     return send_file(mem, mimetype='text/csv', \
                      as_attachment=True, download_name=file_name)
 
