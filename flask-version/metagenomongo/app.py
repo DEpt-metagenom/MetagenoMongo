@@ -6,6 +6,7 @@ import io
 import datetime
 import subprocess
 import hashlib
+from werkzeug.datastructures import ImmutableMultiDict, MultiDict
 
 import module.load as load
 import module.validation as data_validation
@@ -179,17 +180,28 @@ def index():
                     df_temp = df_temp.reindex(columns=fields, fill_value='')
                     data_validation.validation_all(fields,\
                                     options, results, df_temp)  
-                os.remove(filepath)                              
+                os.remove(filepath)
+                user_name = request.form["user_name"]
+                if not check_user(user_name):
+                    results.append({'error':'unauthorized user. Please contact the database admin'})
+                    return render_template('index.html', \
+                    tables=[data.to_html(classes='data', header="true")], fields=fields, results=results, values=values, df=data)                           
                 return render_template('index_with_table.html', \
                     tables=[df_temp.to_html(classes='data', header="true")], \
                     fields=fields, values=values, results=results, df=df_temp)
         # Handle manual data entry
         if request.form:
-            values = request.form
+            values = MultiDict(request.form)
+            values.popitem()
             result = data_validation.data_assign(fields, values)
             data = pd.DataFrame(result["data"],columns=fields)
             result.pop("data", None)
             data_validation.validation_all( fields, options, results, data)
+            user_name = request.form["user_name"]
+            if not check_user(user_name):
+                results.append({'error':'unauthorized user. Please contact the database admin'})
+                return render_template('index.html', \
+                    tables=[data.to_html(classes='data', header="true")], fields=fields, results=results, values=values, df=data)
             return render_template('index_with_table.html', \
                     tables=[data.to_html(classes='data', header="true")], fields=fields, results=results, values=values, df=data)
     return render_template('index.html', tables=[], fields=fields, results=results, values=values)
