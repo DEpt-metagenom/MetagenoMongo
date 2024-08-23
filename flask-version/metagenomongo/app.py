@@ -13,9 +13,10 @@ import module.validation as data_validation
 import module.email as email
 
 app = Flask(__name__)
-secret_key = os.getenv('FLASK_SK')
-if not secret_key:
-    raise ValueError("FLASK_SK environment variable is not set")
+try:
+    secret_key = os.getenv('FLASK_SK')
+except:
+    secret_key = ""
 app.secret_key = secret_key
 UPLOAD_FOLDER = 'uploads'
 ALLOWED_EXTENSIONS = {'csv', 'xlsx'}
@@ -91,11 +92,13 @@ def save_file_server(output_value,file_name):
             f.write(output_value)
     except:
         print("write")
-    subprocess.run(['ls', '-l'])
     remote_path = os.getenv('META_REMOTE_PATH')
     key_path = os.getenv('META_KEY_PATH')
-    scp_command = ['scp', '-i', '../'+key_path, filepath, remote_path]
+    if key_path == None:
+        print(f"Set META_KEY_PATH")
+        return
     try:
+        scp_command = ['scp', '-i', '../'+key_path, filepath, remote_path]
         subprocess.run(scp_command, check=True)
         print(f"File successfully transferred to {remote_path}")
     except subprocess.CalledProcessError as e:
