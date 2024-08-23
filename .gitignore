@@ -4,4 +4,3 @@ venv/
 samples/
 __pycache__/
 *.xlsx
-uploads/
