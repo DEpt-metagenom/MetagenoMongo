@@ -83,17 +83,22 @@ def parse_form_data(form_data):
     return data_list
 
 def save_file_server(output_value,file_name):
-    local_path = file_name + '.csv'
-    with open(local_path, 'w', encoding='utf-8') as f:
+    path = os.getcwd()
+    filepath = os.path.join(path, app.config['UPLOAD_FOLDER'], file_name)
+    with open(filepath, 'w', encoding='utf-8') as f:
         f.write(output_value)
     remote_path = os.getenv('META_REMOTE_PATH')
     key_path = os.getenv('META_KEY_PATH')
-    scp_command = ['scp', '-i', key_path, local_path, remote_path]
+    print(f"key_path:{key_path}")
+    print(f"remote_path:{remote_path}")
+    scp_command = ['scp', '-i', key_path, filepath, remote_path]
     try:
         subprocess.run(scp_command, check=True)
         print(f"File successfully transferred to {remote_path}")
     except subprocess.CalledProcessError as e:
         print(f"An error occurred: {e}")
+    # finally:
+        # os.remove(filepath)
 
 def empty_check(last_data):
     for n in last_data:
@@ -156,7 +161,7 @@ def save():
     email.send_email() 
     current_time = datetime.datetime.now()
     file_name = user_name + current_time.strftime('_%Y-%m-%d-%H:%M:%S') +".csv"
-    save_file_server(output.getvalue().encode('utf-8'),file_name)
+    save_file_server(output.getvalue(),file_name)
     return send_file(mem, mimetype='text/csv', \
                      as_attachment=True, download_name=file_name)
 
@@ -171,9 +176,15 @@ def index():
         if 'file' in request.files:
             file = request.files['file']
             if file:
+                path = os.getcwd()
                 filename = secure_filename(file.filename)
-                filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-                file.save(filepath)
+                filepath = os.path.join(path, app.config['UPLOAD_FOLDER'], filename)
+                try:
+                    file.save(filepath)
+                except FileNotFoundError:
+                    results.append({'error':'Please run it in the MetagenoMongo.'})
+                    return render_template('index_with_table.html', \
+                    tables=[data.to_html(classes='data', header="true")], fields=fields, results=results, values=values, df=data)
                 _, ext = os.path.splitext(file.filename)
                 if ext == '.csv':
                     df_temp = pd.read_csv(filepath, dtype=str)  # Load as strings
