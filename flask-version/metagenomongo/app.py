@@ -90,19 +90,19 @@ def save_file_server(output_value,file_name):
         with open(filepath, 'w', encoding='utf-8') as f:
             f.write(output_value)
     except:
-        print()
+        print("write")
+    subprocess.run(['ls', '-l'])
     remote_path = os.getenv('META_REMOTE_PATH')
     key_path = os.getenv('META_KEY_PATH')
-    # print(f"key_path:{key_path}")
-    # print(f"remote_path:{remote_path}")
-    scp_command = ['scp', '-i', key_path, filepath, remote_path]
+    scp_command = ['scp', '-i', '../'+key_path, filepath, remote_path]
     try:
         subprocess.run(scp_command, check=True)
         print(f"File successfully transferred to {remote_path}")
     except subprocess.CalledProcessError as e:
         print(f"An error occurred: {e}")
-    # finally:
-        # os.remove(filepath)
+        print("Run in the root directory on the gpu2")
+    finally:
+        os.remove(filepath)
 
 def empty_check(last_data):
     for n in last_data:
@@ -213,8 +213,8 @@ def index():
                 # Identify headers in the input file that do not appear in the expected headers
                 incorrect_fields = [header for header in imported_fields if header not in fields]
                 if incorrect_fields:
-                    result= {"error":"Input file contains unexpected fields :::" + ",".join(incorrect_fields)}
-                    results.append(result)
+                    os.remove(filepath)
+                    results.append({"error":"Input file contains unexpected fields :::" + ",".join(incorrect_fields)})
                     return render_template('index.html', \
                     fields=fields, values=values, results=results)
                 else:
