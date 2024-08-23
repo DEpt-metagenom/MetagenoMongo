@@ -85,12 +85,16 @@ def parse_form_data(form_data):
 def save_file_server(output_value,file_name):
     path = os.getcwd()
     filepath = os.path.join(path, app.config['UPLOAD_FOLDER'], file_name)
-    with open(filepath, 'w', encoding='utf-8') as f:
-        f.write(output_value)
+    # print(filepath)
+    try:
+        with open(filepath, 'w', encoding='utf-8') as f:
+            f.write(output_value)
+    except:
+        print()
     remote_path = os.getenv('META_REMOTE_PATH')
     key_path = os.getenv('META_KEY_PATH')
-    print(f"key_path:{key_path}")
-    print(f"remote_path:{remote_path}")
+    # print(f"key_path:{key_path}")
+    # print(f"remote_path:{remote_path}")
     scp_command = ['scp', '-i', key_path, filepath, remote_path]
     try:
         subprocess.run(scp_command, check=True)
@@ -160,7 +164,7 @@ def save():
     mem.seek(0)
     email.send_email() 
     current_time = datetime.datetime.now()
-    file_name = user_name + current_time.strftime('_%Y-%m-%d-%H:%M:%S') +".csv"
+    file_name = user_name + current_time.strftime('_%Y-%m-%d-%H-%M-%S') +".csv"
     save_file_server(output.getvalue(),file_name)
     return send_file(mem, mimetype='text/csv', \
                      as_attachment=True, download_name=file_name)
