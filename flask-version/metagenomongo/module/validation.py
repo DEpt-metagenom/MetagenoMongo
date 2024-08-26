@@ -28,7 +28,7 @@ def validation_all(fields, options, results, df_temp):
     data = df_temp.values.tolist()
     int_dynamic_type = create_data_type_list("int", fields, options)
     float_dynamic_type = create_data_type_list("float", fields, options)
-    sampleID_list = []
+    sampleID_rundirectory_barcode_list = []
     # Apply corrections to data
     for row_index, row in enumerate(data):
         for col_index, cell in enumerate(row):
@@ -51,6 +51,7 @@ def validation_all(fields, options, results, df_temp):
                     corrected_items.append(f'Row {row_index + 1}, Column {col_index + 1}: {original_cell} -> {cell}')
     # Validate data
     for row_index, row in enumerate(data):
+        sampleID, run_directory, barcode = "", "", ""
         for col_index, cell in enumerate(row):
             field = fields[col_index]
             if isinstance(cell, str):
@@ -72,15 +73,29 @@ def validation_all(fields, options, results, df_temp):
                         except ValueError:
                             invalid_combobox_messages.append(\
                             f"Invalid data type in row {row_index + 1}, column '{field}': Expected data type: float")
-                # check sampleID
+                # check sampleID + run_directory + barcode
+                # check sampleID + run_directory + barcode are empty or not
                 if field == "sampleID":
-                    if cell in sampleID_list:
-                        invalid_combobox_messages.append(\
-                            f"There are duplicate SampleID in row {row_index + 1}, column '{field}':")
-                    elif cell == "":
+                    sampleID = cell
+                    if cell == "":
                         invalid_combobox_messages.append(\
                             f"SampleID is necessary in row {row_index + 1}, column '{field}':")
-                    sampleID_list.append(cell)
+                if field == "run_directory":
+                    if cell == "":
+                        invalid_combobox_messages.append(\
+                            f"run_directory is necessary in row {row_index + 1}, column '{field}':")
+                    run_directory = cell
+                if field == "barcode":
+                    if cell == "":
+                        invalid_combobox_messages.append(\
+                            f"barcode is necessary in row {row_index + 1}, column '{field}':")
+                    barcode = cell
+                    data_id = sampleID+run_directory+barcode
+                    if data_id in sampleID_rundirectory_barcode_list:
+                        invalid_combobox_messages.append(\
+                            f"The combination of SampleID, run_directory and barcode is not unique in row {row_index + 1}:")
+                    sampleID_rundirectory_barcode_list.append(data_id)
+
     # Prepare result text
     if len(invalid_date_messages) != 0 or len(invalid_combobox_messages) != 0:
         result_text = (
