@@ -122,29 +122,29 @@ def empty_check(last_data):
 @app.route('/change', methods=['POST'])
 def change():
     data_list = parse_form_data(request.form)
-    results = []
+    errors = []
     values = {"default": 0}
     data = pd.DataFrame(data_list, columns=fields)
-    data_validation.validation_all( fields, options, results, data)
+    data_validation.validation_all( fields, options, errors, data)
     return render_template('index_with_table.html', \
                 tables=[data.to_html(classes='data', header="true")], \
-                fields=fields, results=results, values=values, \
+                errors=errors, \
                 df=data, user_name=request.form["user_name"])
 
 @app.route('/addLine', methods=['POST'])
 def addLine():
     data_list = parse_form_data(request.form)
-    results = []
+    errors = []
     values = {"default": 0}
     data = pd.DataFrame(data_list, columns=fields)
-    data_validation.validation_all( fields, options, results, data)
+    data_validation.validation_all( fields, options, errors, data)
     new_data = data.iloc[-1]
     if empty_check(new_data):
         data.loc[len(data)] = new_data
         data.at[len(data)-1,'sampleID'] = ''
     return render_template('index_with_table.html', \
                 tables=[data.to_html(classes='data', header="true")], \
-                fields=fields, results=results, values=values, \
+                errors=errors, \
                 df=data, user_name=request.form["user_name"])
 
 @app.route('/save', methods=['GET', 'POST'])
@@ -152,26 +152,25 @@ def save():
     data_list = parse_form_data(request.form)
     user_name = request.form["user_name"]
     values = {"default": 0}
-    results = []
+    errors = []
     if not check_user(user_name):
-        results.append({'error':'unauthorized user. Please contact the database admin'})
+        errors.append({'error':'unauthorized user. Please contact the database admin'})
         data = pd.DataFrame(data_list, columns=fields)
         return render_template('index_with_table.html', \
-                    tables=[data.to_html(classes='data', header="true")], fields=fields, results=results, values=values, df=data)
+                    tables=[data.to_html(classes='data', header="true")], errors=errors, df=data)
     df = pd.DataFrame(data_list, columns=fields)
     df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
-    data_validation.validation_all( fields, options, results, df)
-    if results:
+    data_validation.validation_all( fields, options, errors, df)
+    if errors:
         return render_template('index_with_table.html', \
             tables=[df.to_html(classes='data', header="true")], \
-            fields=fields, results=results, values=values, \
+            errors=errors, \
             df=df, user_name=request.form["user_name"])
     output = io.StringIO()
     df.to_csv(output, index=False)
     mem = io.BytesIO()
     mem.write(output.getvalue().encode('utf-8'))
     mem.seek(0)
-    # email.send_email() 
     current_time = datetime.datetime.now()
     file_name = user_name + current_time.strftime('_%Y-%m-%d-%H-%M-%S') +".csv"
     save_file_server(output.getvalue(),file_name)
@@ -182,7 +181,7 @@ def save():
 def index():
     # row, column_name, error type
     data = pd.DataFrame()
-    results = []
+    errors = []
     values = {"default": 0}
     if request.method == 'POST':
         # Handle CSV upload
@@ -195,9 +194,9 @@ def index():
                 try:
                     file.save(filepath)
                 except FileNotFoundError:
-                    results.append({'error':'Please run it in the MetagenoMongo.'})
+                    errors.append({'error':'Please run it in the MetagenoMongo.'})
                     return render_template('index_with_table.html', \
-                    tables=[data.to_html(classes='data', header="true")], fields=fields, results=results, values=values, df=data)
+                    tables=[data.to_html(classes='data', header="true")], errors=errors, df=data)
                 _, ext = os.path.splitext(file.filename)
                 if ext == '.csv':
                     df_temp = pd.read_csv(filepath, dtype=str)  # Load as strings
@@ -205,10 +204,10 @@ def index():
                     df_temp = pd.read_excel(filepath, dtype=str)  # Load as strings
                 else:
                     os.remove(filepath)
-                    results = []
-                    results.append({'error':'Invalid file type'})
+                    errors = []
+                    errors.append({'error':'Invalid file type'})
                     return render_template('index_with_table.html', \
-                    tables=[data.to_html(classes='data', header="true")], fields=fields, results=results, values=values, df=data)
+                    tables=[data.to_html(classes='data', header="true")], errors=errors, df=data)
                 # Strip whitespace from headers
                 df_temp.columns = df_temp.columns.str.strip()
                 # Strip whitespace from data
@@ -223,23 +222,23 @@ def index():
                 incorrect_fields = [header for header in imported_fields if header not in fields]
                 if incorrect_fields:
                     os.remove(filepath)
-                    results.append({"error":"Input file contains unexpected fields :::" + ",".join(incorrect_fields)})
+                    errors.append({"error":"Input file contains unexpected fields :::" + ",".join(incorrect_fields)})
                     return render_template('index.html', \
-                    fields=fields, values=values, results=results)
+                    fields=fields, values=values, errors=errors)
                 else:
                     # No incorrect headers, just update the table
                     df_temp = df_temp.reindex(columns=fields, fill_value='')
                     data_validation.validation_all(fields,\
-                                    options, results, df_temp)  
+                                    options, errors, df_temp)  
                 os.remove(filepath)
                 user_name = request.form["user_name"]
                 if not check_user(user_name):
-                    results.append({'error':'unauthorized user. Please contact the database admin'})
+                    errors.append({'error':'unauthorized user. Please contact the database admin'})
                     return render_template('index.html', \
-                    tables=[data.to_html(classes='data', header="true")], fields=fields, results=results, values=values, df=data)                           
+                    tables=[data.to_html(classes='data', header="true")], fields=fields, errors=errors, values=values, df=data)                           
                 return render_template('index_with_table.html', \
                     tables=[df_temp.to_html(classes='data', header="true")], \
-                    fields=fields, values=values, results=results, df=df_temp, user_name=user_name)
+                    errors=errors, df=df_temp, user_name=user_name)
         # Handle manual data entry
         if request.form:
             values = MultiDict(request.form)
@@ -248,13 +247,13 @@ def index():
             result = data_validation.data_assign(fields, values)
             data = pd.DataFrame(result["data"],columns=fields)
             result.pop("data", None)
-            data_validation.validation_all( fields, options, results, data)
+            data_validation.validation_all( fields, options, errors, data)
             user_name = request.form["user_name"]
             action = request.form["action"]
             if not check_user(user_name):
-                results.append({'error':'unauthorized user. Please contact the database admin'})
+                errors.append({'error':'unauthorized user. Please contact the database admin'})
                 return render_template('index.html', \
-                    tables=[data.to_html(classes='data', header="true")], fields=fields, results=results, values=values, df=data)
+                    tables=[data.to_html(classes='data', header="true")], fields=fields, errors=errors, values=values, df=data)
             # action = new_line or validate
             if action == "new_line":
                 new_data = data.iloc[-1]
@@ -262,14 +261,14 @@ def index():
                     data.loc[len(data)] = new_data
                     data.at[len(data)-1,'sampleID'] = ''
                     return render_template('index_with_table.html', \
-                    tables=[data.to_html(classes='data', header="true")], fields=fields, results=results, values=values, df=data, user_name=user_name)
+                    tables=[data.to_html(classes='data', header="true")],  errors=errors, df=data, user_name=user_name)
                 else:
-                    results.append({'error':'No data available.'})
+                    errors.append({'error':'No data available.'})
                     return render_template('index_with_table.html', \
-                    tables=[data.to_html(classes='data', header="true")], fields=fields, results=results, values=values, df=data, user_name=user_name)
+                    tables=[data.to_html(classes='data', header="true")], errors=errors, df=data, user_name=user_name)
             return render_template('index_with_table.html', \
-                    tables=[data.to_html(classes='data', header="true")], fields=fields, results=results, values=values, df=data, user_name=user_name)
-    return render_template('index.html', tables=[], fields=fields, results=results, values=values)
+                    tables=[data.to_html(classes='data', header="true")], errors=errors, df=data, user_name=user_name)
+    return render_template('index.html', tables=[], fields=fields, errors=errors, values=values)
 
 if __name__ == '__main__':
     app.run(debug=True)

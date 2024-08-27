@@ -49,14 +49,14 @@
                                 <div class="d-grid col-6 mx-auto">
                                     <p>{{user_name}}</p>
                                     <input type="hidden" name="user_name" value="{{user_name}}">
-                            {% if not results%}
+                            {% if not errors%}
                                     <button type="submit" formaction="/save">Save as csv</button>
                                 </div>
                             {% endif %}
                         <div class="result">             
-                            {% for result in results %}
-                            <p> {{ result.error }} </p>
-                            <p> {{ result.data }} </p>
+                            {% for error in errors %}
+                            <p> {{ error.error }} </p>
+                            <p> {{ error.data }} </p>
                             {% endfor %}
                         </div>
                         
