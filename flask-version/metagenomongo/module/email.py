@@ -6,7 +6,7 @@ import os
 def send_email(file_name, remote_path):
     # Set up the MIME
 
-    sender_email = os.getenv('META_EMAIL')
+    sender_email = os.getenv('SENDER_EMAIL')
     recipient_email = os.getenv('RECIPIENT_EMAIL')
     try:
         recipient_email = recipient_email.split(',')
@@ -14,7 +14,7 @@ def send_email(file_name, remote_path):
     except:
         print(f"An error occurred: check RECIPIENT_EMAIL is set correctly")
         return
-    sender_password = os.getenv('META_PASS')
+    sender_password = os.getenv('SENDER_PASSWORD')
     message = MIMEMultipart()
     message['Subject'] = f"The file {file_name} upload"
     message['From'] = sender_email
