@@ -14,13 +14,14 @@ import module.validation as data_validation
 import module.email as email
 
 app = Flask(__name__)
-try:
-    secret_key = os.getenv('FLASK_SK')
-except:
-    secret_key = ""
-app.secret_key = secret_key
+
+app.secret_key = os.urandom(10)
 UPLOAD_FOLDER = 'uploads'
 ALLOWED_EXTENSIONS = {'csv', 'xlsx'}
+if os.getenv('META_REMOTE_PATH') == None or os.getenv('META_KEY_PATH') == None:
+    print("META_REMOTE_PATH or META_KEY_PATH is/are missing.")
+    exit() 
+
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -99,12 +100,9 @@ def save_file_server(output_value,file_name):
     except:
         print("write")
     remote_path = os.getenv('META_REMOTE_PATH')
-    key_path = os.getenv('META_KEY_PATH')
-    if key_path == None:
-        print(f"Set META_KEY_PATH")
-        return
+    key_path = os.path.join(path, os.getenv('META_KEY_PATH'))
     try:
-        scp_command = ['scp', '-i', '../'+key_path, filepath, remote_path]
+        scp_command = ['scp', '-i', key_path, filepath, remote_path]
         subprocess.run(scp_command, check=True)
         email.send_email(file_name, remote_path) 
         print(f"File successfully transferred to {remote_path}")
