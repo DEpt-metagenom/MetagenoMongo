@@ -27,6 +27,12 @@ headers_file = os.path.join(script_dir, '.metagenomongo.csv')
 options = load.load_options(headers_file)
 fields = list(options.keys())
 
+# email env error
+email_env = ""
+if os.getenv('RECIPIENT_EMAIL') == None:
+    email_env = "RECIPIENT_EMAIL is not set. The application is turned off.\
+        You should notify the database admins to let them know about the uploaded file."
+
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[-1].lower() in ALLOWED_EXTENSIONS
@@ -86,7 +92,6 @@ def parse_form_data(form_data):
 def save_file_server(output_value,file_name):
     path = os.getcwd()
     filepath = os.path.join(path, app.config['UPLOAD_FOLDER'], file_name)
-    # print(filepath)
     try:
         with open(filepath, 'w', encoding='utf-8') as f:
             f.write(output_value)
@@ -100,6 +105,7 @@ def save_file_server(output_value,file_name):
     try:
         scp_command = ['scp', '-i', '../'+key_path, filepath, remote_path]
         subprocess.run(scp_command, check=True)
+        email.send_email(file_name, remote_path) 
         print(f"File successfully transferred to {remote_path}")
     except subprocess.CalledProcessError as e:
         print(f"An error occurred: {e}")
@@ -165,7 +171,7 @@ def save():
     mem = io.BytesIO()
     mem.write(output.getvalue().encode('utf-8'))
     mem.seek(0)
-    email.send_email() 
+    # email.send_email() 
     current_time = datetime.datetime.now()
     file_name = user_name + current_time.strftime('_%Y-%m-%d-%H-%M-%S') +".csv"
     save_file_server(output.getvalue(),file_name)
