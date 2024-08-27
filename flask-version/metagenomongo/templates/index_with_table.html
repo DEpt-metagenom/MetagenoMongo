@@ -49,15 +49,13 @@
                                 <div class="d-grid col-6 mx-auto">
                                     <p>{{user_name}}</p>
                                     <input type="hidden" name="user_name" value="{{user_name}}">
-                            {% if not errors%}
+                            {% if not errors.fatal_error%}
                                     <button type="submit" formaction="/save">Save as csv</button>
                                 </div>
                             {% endif %}
-                        <div class="result">             
-                            {% for error in errors %}
-                            <p> {{ error.error }} </p>
-                            <p> {{ error.data }} </p>
-                            {% endfor %}
+                        <div class="result">            
+                            {{ errors.fatal_error}}
+                            {{ errors.warning}}
                         </div>
                         
                         </form>

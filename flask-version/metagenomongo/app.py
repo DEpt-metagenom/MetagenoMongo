@@ -7,6 +7,7 @@ import datetime
 import subprocess
 import hashlib
 from werkzeug.datastructures import ImmutableMultiDict, MultiDict
+from collections import defaultdict
 
 import module.load as load
 import module.validation as data_validation
@@ -27,11 +28,11 @@ headers_file = os.path.join(script_dir, '.metagenomongo.csv')
 options = load.load_options(headers_file)
 fields = list(options.keys())
 
-# email env error
-email_env = ""
-if os.getenv('RECIPIENT_EMAIL') == None:
-    email_env = "RECIPIENT_EMAIL is not set. The application is turned off.\
-        You should notify the database admins to let them know about the uploaded file."
+# email env error:
+def email_env_check(errors):
+    if os.getenv('RECIPIENT_EMAIL') == None:
+        errors['warning'].append('RECIPIENT_EMAIL is not set. The automatic email notification is turned off.\
+                                 Please notify the database admins to let them know about the uploaded file.')
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -122,8 +123,8 @@ def empty_check(last_data):
 @app.route('/change', methods=['POST'])
 def change():
     data_list = parse_form_data(request.form)
-    errors = []
-    values = {"default": 0}
+    errors = defaultdict(list)
+    email_env_check(errors)
     data = pd.DataFrame(data_list, columns=fields)
     data_validation.validation_all( fields, options, errors, data)
     return render_template('index_with_table.html', \
@@ -134,8 +135,8 @@ def change():
 @app.route('/addLine', methods=['POST'])
 def addLine():
     data_list = parse_form_data(request.form)
-    errors = []
-    values = {"default": 0}
+    errors = defaultdict(list)
+    email_env_check(errors)
     data = pd.DataFrame(data_list, columns=fields)
     data_validation.validation_all( fields, options, errors, data)
     new_data = data.iloc[-1]
@@ -152,9 +153,10 @@ def save():
     data_list = parse_form_data(request.form)
     user_name = request.form["user_name"]
     values = {"default": 0}
-    errors = []
+    errors = defaultdict(list)
+    email_env_check(errors)
     if not check_user(user_name):
-        errors.append({'error':'unauthorized user. Please contact the database admin'})
+        errors['fatal_error']='unauthorized user. Please contact the database admin'
         data = pd.DataFrame(data_list, columns=fields)
         return render_template('index_with_table.html', \
                     tables=[data.to_html(classes='data', header="true")], errors=errors, df=data)
@@ -181,7 +183,8 @@ def save():
 def index():
     # row, column_name, error type
     data = pd.DataFrame()
-    errors = []
+    errors = defaultdict(list)
+    email_env_check(errors)
     values = {"default": 0}
     if request.method == 'POST':
         # Handle CSV upload
@@ -194,7 +197,7 @@ def index():
                 try:
                     file.save(filepath)
                 except FileNotFoundError:
-                    errors.append({'error':'Please run it in the MetagenoMongo.'})
+                    errors['fatal_error'].append('Please run it in the MetagenoMongo.')
                     return render_template('index_with_table.html', \
                     tables=[data.to_html(classes='data', header="true")], errors=errors, df=data)
                 _, ext = os.path.splitext(file.filename)
@@ -204,8 +207,7 @@ def index():
                     df_temp = pd.read_excel(filepath, dtype=str)  # Load as strings
                 else:
                     os.remove(filepath)
-                    errors = []
-                    errors.append({'error':'Invalid file type'})
+                    errors['fatal_error'].append('Invalid file type')
                     return render_template('index_with_table.html', \
                     tables=[data.to_html(classes='data', header="true")], errors=errors, df=data)
                 # Strip whitespace from headers
@@ -222,7 +224,7 @@ def index():
                 incorrect_fields = [header for header in imported_fields if header not in fields]
                 if incorrect_fields:
                     os.remove(filepath)
-                    errors.append({"error":"Input file contains unexpected fields :::" + ",".join(incorrect_fields)})
+                    errors["fatal_error"].append("Input file contains unexpected fields :::" + ",".join(incorrect_fields))
                     return render_template('index.html', \
                     fields=fields, values=values, errors=errors)
                 else:
@@ -233,7 +235,7 @@ def index():
                 os.remove(filepath)
                 user_name = request.form["user_name"]
                 if not check_user(user_name):
-                    errors.append({'error':'unauthorized user. Please contact the database admin'})
+                    errors['fatal_error'].append('unauthorized user. Please contact the database admin')
                     return render_template('index.html', \
                     tables=[data.to_html(classes='data', header="true")], fields=fields, errors=errors, values=values, df=data)                           
                 return render_template('index_with_table.html', \
@@ -251,7 +253,7 @@ def index():
             user_name = request.form["user_name"]
             action = request.form["action"]
             if not check_user(user_name):
-                errors.append({'error':'unauthorized user. Please contact the database admin'})
+                errors['fatal_error'].append('unauthorized user. Please contact the database admin')
                 return render_template('index.html', \
                     tables=[data.to_html(classes='data', header="true")], fields=fields, errors=errors, values=values, df=data)
             # action = new_line or validate
@@ -260,14 +262,11 @@ def index():
                 if empty_check(new_data):
                     data.loc[len(data)] = new_data
                     data.at[len(data)-1,'sampleID'] = ''
-                    return render_template('index_with_table.html', \
-                    tables=[data.to_html(classes='data', header="true")],  errors=errors, df=data, user_name=user_name)
                 else:
-                    errors.append({'error':'No data available.'})
-                    return render_template('index_with_table.html', \
-                    tables=[data.to_html(classes='data', header="true")], errors=errors, df=data, user_name=user_name)
+                    errors['fatal_error'].append('No data available.')
             return render_template('index_with_table.html', \
                     tables=[data.to_html(classes='data', header="true")], errors=errors, df=data, user_name=user_name)
+    
     return render_template('index.html', tables=[], fields=fields, errors=errors, values=values)
 
 if __name__ == '__main__':

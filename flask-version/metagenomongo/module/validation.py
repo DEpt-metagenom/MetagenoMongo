@@ -18,7 +18,7 @@ def data_assign(fields, values):
 def create_data_type_list(data_type, fields, options):
     return [field for field in fields if data_type == options[field]['datatype']]
 
-def validation_all(fields, options, results, df_temp):
+def validation_all(fields, options, errors, df_temp):
     # Remove fully empty rows
     df_temp = df_temp[~(df_temp == '').all(axis=1)]
     corrected_count = 0
@@ -103,4 +103,4 @@ def validation_all(fields, options, results, df_temp):
         # Add detailed errors
         detailed_errors = '\n'.join(invalid_date_messages + invalid_combobox_messages)
         result_text += detailed_errors
-        results.append({'error': result_text})
+        errors['fatal_error'].append(result_text)
