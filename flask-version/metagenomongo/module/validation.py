@@ -29,6 +29,7 @@ def validation_all(fields, options, results, df_temp):
     int_dynamic_type = create_data_type_list("int", fields, options)
     float_dynamic_type = create_data_type_list("float", fields, options)
     sampleID_rundirectory_barcode_list = []
+    sampleID_list = []
     # Apply corrections to data
     for row_index, row in enumerate(data):
         for col_index, cell in enumerate(row):
@@ -77,24 +78,21 @@ def validation_all(fields, options, results, df_temp):
                 # check sampleID + run_directory + barcode are empty or not
                 if field == "sampleID":
                     sampleID = cell
-                    if cell == "":
+                    if sampleID == "":
                         invalid_combobox_messages.append(\
                             f"SampleID is necessary in row {row_index + 1}, column '{field}':")
-                if field == "run_directory":
-                    if cell == "":
-                        invalid_combobox_messages.append(\
-                            f"run_directory is necessary in row {row_index + 1}, column '{field}':")
+                    else:
+                        sampleID_list.append(sampleID)
+                if field == "run_directory" and sampleID in sampleID_list:
                     run_directory = cell
-                if field == "barcode":
-                    if cell == "":
-                        invalid_combobox_messages.append(\
-                            f"barcode is necessary in row {row_index + 1}, column '{field}':")
+                if field == "barcode" and sampleID in sampleID_list:
                     barcode = cell
-                    data_id = sampleID+run_directory+barcode
-                    if data_id in sampleID_rundirectory_barcode_list:
-                        invalid_combobox_messages.append(\
-                            f"The combination of SampleID, run_directory and barcode is not unique in row {row_index + 1}:")
-                    sampleID_rundirectory_barcode_list.append(data_id)
+        if sampleID != "":
+            data_id = sampleID+run_directory+barcode
+            if data_id in sampleID_rundirectory_barcode_list:
+                invalid_combobox_messages.append(\
+                    f"The combination of SampleID, run_directory and barcode is not unique in row {row_index + 1}:")
+            sampleID_rundirectory_barcode_list.append(data_id)
 
     # Prepare result text
     if len(invalid_date_messages) != 0 or len(invalid_combobox_messages) != 0:
