@@ -6,8 +6,9 @@ import io
 import datetime
 import subprocess
 import hashlib
-from werkzeug.datastructures import ImmutableMultiDict, MultiDict
+from werkzeug.datastructures import MultiDict
 from collections import defaultdict
+import logging
 
 import module.load as load
 import module.validation as data_validation
@@ -27,7 +28,7 @@ ALLOWED_EXTENSIONS = {'csv', 'xlsx'}
 if os.getenv('META_REMOTE_PATH') is None or os.getenv('META_KEY_PATH') is None:
     current_app.logger.error("META_REMOTE_PATH or META_KEY_PATH is missing.")
     raise EnvironmentError("Required environment variables are not set.")
-
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -103,10 +104,11 @@ def save_file_server(output_value,file_name,errors):
     try:
         with open(filepath, 'w', encoding='utf-8') as f:
             f.write(output_value)
+        logging.info(f"File {file_name} saved successfully.")
     except FileNotFoundError:
-        print("File path does not exits")
+        logging.error("File path does not exist.")
     except PermissionError:
-        print("Permission denied")
+        logging.error("Permission denied.")
     remote_path = os.getenv('META_REMOTE_PATH')
     key_path = os.path.join(path, os.getenv('META_KEY_PATH'))
     try:
