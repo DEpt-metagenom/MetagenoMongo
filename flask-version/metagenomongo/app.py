@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, send_file
+from flask import Flask, request, render_template, send_file, current_app
 import os
 import pandas as pd
 from werkzeug.utils import secure_filename
@@ -16,11 +16,17 @@ import module.email as email
 app = Flask(__name__)
 
 app.secret_key = os.urandom(10)
+# Note: This application currently does not utilize cookies, session management, CSRF protection, or any features that require a consistent secret key.
+# Therefore, we are using os.urandom() to generate a cryptographically secure random secret key at startup.
+# This approach is suitable for the current use case, but if any features that depend on the secret key are introduced in the future,
+# it will be necessary to ensure the secret key remains consistent across application restarts.
+# Future developers should revisit this decision if the application's requirements change.
 UPLOAD_FOLDER = 'uploads'
 ALLOWED_EXTENSIONS = {'csv', 'xlsx'}
-if os.getenv('META_REMOTE_PATH') == None or os.getenv('META_KEY_PATH') == None:
-    print("META_REMOTE_PATH or META_KEY_PATH is/are missing.")
-    exit() 
+
+if os.getenv('META_REMOTE_PATH') is None or os.getenv('META_KEY_PATH') is None:
+    current_app.logger.error("META_REMOTE_PATH or META_KEY_PATH is missing.")
+    raise EnvironmentError("Required environment variables are not set.")
 
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -91,14 +97,16 @@ def parse_form_data(form_data):
             count = 0
     return data_list
 
-def save_file_server(output_value,file_name):
+def save_file_server(output_value,file_name,errors):
     path = os.getcwd()
     filepath = os.path.join(path, app.config['UPLOAD_FOLDER'], file_name)
     try:
         with open(filepath, 'w', encoding='utf-8') as f:
             f.write(output_value)
-    except:
-        print("write")
+    except FileNotFoundError:
+        print("File path does not exits")
+    except PermissionError:
+        print("Permission denied")
     remote_path = os.getenv('META_REMOTE_PATH')
     key_path = os.path.join(path, os.getenv('META_KEY_PATH'))
     try:
@@ -173,7 +181,7 @@ def save():
     mem.seek(0)
     current_time = datetime.datetime.now()
     file_name = user_name + current_time.strftime('_%Y-%m-%d-%H-%M-%S') +".csv"
-    save_file_server(output.getvalue(),file_name)
+    save_file_server(output.getvalue(),file_name,errors)
     return send_file(mem, mimetype='text/csv', \
                      as_attachment=True, download_name=file_name)
 

@@ -3,7 +3,7 @@
 ## 2.Download python libraries. Run the command in the app root directory
 pip install -r requirements.txt
 
-## 3.Set enviornment variables.
+## 3.Set environment variables.
 https://github.com/DEpt-metagenom/intern_tasks/issues/8#issuecomment-2307166696
 
 ## 4.Run the application in the app root directory

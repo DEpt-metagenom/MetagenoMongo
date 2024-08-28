@@ -87,12 +87,13 @@ def validation_all(fields, options, errors, df_temp):
                     run_directory = cell
                 if field == "barcode" and sampleID in sampleID_list:
                     barcode = cell
-        if sampleID != "":
-            data_id = sampleID+run_directory+barcode
-            if data_id in sampleID_rundirectory_barcode_list:
-                invalid_combobox_messages.append(\
-                    f"The combination of SampleID, run_directory and barcode is not unique in row {row_index + 1}:")
-            sampleID_rundirectory_barcode_list.append(data_id)
+        if sampleID:
+            data_id = f"{sampleID}{run_directory}{barcode}"
+            if data_id in set(sampleID_rundirectory_barcode_list):
+                invalid_combobox_messages.append(
+            f"The combination of SampleID, run_directory and barcode is not unique in row {row_index + 1}:")
+            else:
+                sampleID_rundirectory_barcode_list.add(data_id)
 
     # Prepare result text
     if len(invalid_date_messages) != 0 or len(invalid_combobox_messages) != 0:
