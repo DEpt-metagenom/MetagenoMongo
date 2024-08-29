@@ -102,6 +102,12 @@ def parse_form_data(form_data):
     return data_list
 
 def save_file_server(output_value,file_name,errors):
+    remote_path = os.getenv('META_REMOTE_PATH')
+    key_path = os.getenv('META_KEY_PATH')
+    if remote_path is None or key_path is None:
+        errors['warning'].append("Set META_KEY_PATH and/or META_REMOTE_PATH.")
+        return
+    # absolute path of the current directory
     path = os.getcwd()
     filepath = os.path.join(path, app.config['UPLOAD_FOLDER'], file_name)
     try:
@@ -112,8 +118,7 @@ def save_file_server(output_value,file_name,errors):
         logging.error("File path does not exist.")
     except PermissionError:
         logging.error("Permission denied.")
-    remote_path = os.getenv('META_REMOTE_PATH')
-    key_path = os.path.join(path, os.getenv('META_KEY_PATH'))
+    
     try:
         scp_command = ['scp', '-i', key_path, filepath, remote_path]
         subprocess.run(scp_command, check=True)
@@ -163,7 +168,6 @@ def addLine():
 def save():
     data_list = parse_form_data(request.form)
     user_name = request.form["user_name"]
-    values = {"default": 0}
     errors = defaultdict(list)
     email_env_check(errors)
     if not check_user(user_name):
@@ -174,7 +178,7 @@ def save():
     df = pd.DataFrame(data_list, columns=fields)
     df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
     data_validation.validation_all( fields, options, errors, df)
-    if errors:
+    if errors['fatal_error']:
         return render_template('index_with_table.html', \
             tables=[df.to_html(classes='data', header="true")], \
             errors=errors, \
@@ -199,6 +203,11 @@ def index():
     values = {"default": 0}
     if request.method == 'POST':
         # Handle CSV upload
+        user_name = request.form["user_name"]
+        if not check_user(user_name):
+            errors['fatal_error'].append('unauthorized user. Please contact the database admin')
+            return render_template('index.html', \
+                tables=[data.to_html(classes='data', header="true")], fields=fields, errors=errors, values=values, df=data)
         if 'file' in request.files:
             file = request.files['file']
             if file:
@@ -244,11 +253,6 @@ def index():
                     data_validation.validation_all(fields,\
                                     options, errors, df_temp)  
                 os.remove(filepath)
-                user_name = request.form["user_name"]
-                if not check_user(user_name):
-                    errors['fatal_error'].append('unauthorized user. Please contact the database admin')
-                    return render_template('index.html', \
-                    tables=[data.to_html(classes='data', header="true")], fields=fields, errors=errors, values=values, df=data)                           
                 return render_template('index_with_table.html', \
                     tables=[df_temp.to_html(classes='data', header="true")], \
                     errors=errors, df=df_temp, user_name=user_name)
@@ -263,11 +267,7 @@ def index():
             data_validation.validation_all( fields, options, errors, data)
             user_name = request.form["user_name"]
             action = request.form["action"]
-            if not check_user(user_name):
-                errors['fatal_error'].append('unauthorized user. Please contact the database admin')
-                return render_template('index.html', \
-                    tables=[data.to_html(classes='data', header="true")], fields=fields, errors=errors, values=values, df=data)
-            # action = new_line or validate
+            # this part causes bugs when add 'Delete' and 'Duplicate' columuns
             if action == "new_line":
                 new_data = data.iloc[-1]
                 if empty_check(new_data):

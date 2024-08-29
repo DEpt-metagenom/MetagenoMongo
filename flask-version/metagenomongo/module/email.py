@@ -5,7 +5,6 @@ import os
 
 def send_email(file_name, remote_path):
     # Set up the MIME
-
     sender_email = os.getenv('SENDER_EMAIL')
     recipient_email = os.getenv('RECIPIENT_EMAIL')
     try:
