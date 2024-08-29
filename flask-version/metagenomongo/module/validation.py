@@ -93,7 +93,7 @@ def validation_all(fields, options, errors, df_temp):
                 invalid_combobox_messages.append(
             f"The combination of SampleID, run_directory and barcode is not unique in row {row_index + 1}:")
             else:
-                sampleID_rundirectory_barcode_list.add(data_id)
+                sampleID_rundirectory_barcode_list.append(data_id)
 
     # Prepare result text
     if len(invalid_date_messages) != 0 or len(invalid_combobox_messages) != 0:
