@@ -1,5 +1,6 @@
 import re
 from datetime import datetime
+from collections import Counter
 
 DATE_FIELDS = ["collection_date", "run_date"]
 date_pattern = re.compile(r'^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}\.\d{3}Z)?$') 
@@ -74,8 +75,6 @@ def validation_all(fields, options, errors, df_temp):
                         except ValueError:
                             invalid_combobox_messages.append(\
                             f"Invalid data type in row {row_index + 1}, column '{field}': Expected data type: float")
-                # check sampleID + run_directory + barcode
-                # check sampleID + run_directory + barcode are empty or not
                 if field == "sampleID":
                     sampleID = cell
                     if sampleID == "":
@@ -83,18 +82,39 @@ def validation_all(fields, options, errors, df_temp):
                             f"SampleID is necessary in row {row_index + 1}, column '{field}':")
                     else:
                         sampleID_list.append(sampleID)
-                if field == "run_directory" and sampleID in sampleID_list:
+                if field == "run_directory" and sampleID != "":
                     run_directory = cell
-                if field == "barcode" and sampleID in sampleID_list:
+                if field == "barcode" and sampleID != "":
                     barcode = cell
-        if sampleID:
+        if sampleID != "":
             data_id = f"{sampleID}{run_directory}{barcode}"
-            if data_id in set(sampleID_rundirectory_barcode_list):
-                invalid_combobox_messages.append(
-            f"The combination of SampleID, run_directory and barcode is not unique in row {row_index + 1}:")
-            else:
-                sampleID_rundirectory_barcode_list.append(data_id)
-
+            sampleID_rundirectory_barcode_list.append(data_id)
+    sampleIDs = Counter(sampleID_list)
+    sampleID_rundirectory_barcode_ids = Counter(sampleID_rundirectory_barcode_list)
+    duplicate_sampleIDs = {id for id, count in sampleIDs.items() if int(count) > 1}
+    duplicate_sampleID_rundirectory_barcodes = \
+        {id for id, count in sampleID_rundirectory_barcode_ids.items() if int(count) > 1}
+    if duplicate_sampleIDs != {}:
+        for row_index, row in enumerate(data):
+            sampleID, run_directory, barcode = "", "", ""
+            for col_index, cell in enumerate(row):
+                field = fields[col_index]
+                if cell in duplicate_sampleIDs:
+                    sampleID = cell
+                if sampleID != "":
+                    if field == "run_directory":
+                        if cell == "":
+                            invalid_combobox_messages.append(\
+                                f"run_directory is necessary in row {row_index + 1}, column '{field}':")                   
+                        run_directory = cell
+                    if field == "barcode":
+                        if cell == "":
+                            invalid_combobox_messages.append(\
+                                f"Barcode is necessary in row {row_index + 1}, column '{field}':")
+                        barcode = cell
+            if f"{sampleID}{run_directory}{barcode}" in duplicate_sampleID_rundirectory_barcodes:
+                invalid_combobox_messages.append(\
+                            f"sampleID_rundirectory_barcodes must be unique in row {row_index + 1}:")
     # Prepare result text
     if len(invalid_date_messages) != 0 or len(invalid_combobox_messages) != 0:
         result_text = (
