@@ -1,4 +1,4 @@
-## 1.Clone https://github.com/DEpt-metagenom/MetagenoMongo.git
+## 1. Clone https://github.com/DEpt-metagenom/MetagenoMongo.git
 
 ## 2.Download python libraries. Run the command in the app root directory
 pip install -r requirements.txt
