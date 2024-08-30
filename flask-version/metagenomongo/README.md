@@ -6,6 +6,11 @@ pip install -r requirements.txt
 ## 3.Set environment variables.
 https://github.com/DEpt-metagenom/intern_tasks/issues/8#issuecomment-2307166696
 
+## (Optional) please comment out the following part in app.py if you run the app on your labtop--
+if os.getenv('META_REMOTE_PATH') is None or os.getenv('META_KEY_PATH') is None:
+     current_app.logger.error("META_REMOTE_PATH or META_KEY_PATH is missing.")
+     raise EnvironmentError("Required environment variables are not set.")
+
 ## 4.Run the application in the app root directory
 python flask-version/metagenomongo/app.py
 
