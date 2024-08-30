@@ -13,10 +13,9 @@ python flask-version/metagenomongo/app.py
 
 
 ## (Optional) Save files to the remote server function
-Login to the gpu2
-Run the application at the app root directory.
-Import or input valid data
-Click the button “Save as csv”
-Login as upload user in the gpu3
-https://github.com/DEpt-metagenom/intern_tasks/issues/8#issuecomment-2307166696
-
+1. Login to the GPU server 2 (gpu2)
+2. Run the application at the app root directory
+3. Import or input valid data
+4. Click the button "Save as csv"
+5. Login to the GPU server 3 (gpu3)
+6. Follow the instructions at: https://github.com/DEpt-metagenom/intern_tasks/issues/8#issuecomment-2307166696
