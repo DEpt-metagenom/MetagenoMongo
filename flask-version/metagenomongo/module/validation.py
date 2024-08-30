@@ -16,8 +16,8 @@ def data_assign(fields, values):
         result["error"] = "There is no data in the row"
     return result
 
-def create_data_type_list(data_type, fields, options):
-    return [field for field in fields if data_type == options[field]['datatype']]
+def create_data_type_set(data_type, fields, options):
+    return {field for field in fields if data_type == options[field]['datatype']}
 
 def validation_all(fields, options, errors, df_temp):
     # Remove fully empty rows
@@ -27,8 +27,8 @@ def validation_all(fields, options, errors, df_temp):
     invalid_date_messages = []
     invalid_combobox_messages = []
     data = df_temp.values.tolist()
-    int_dynamic_type = create_data_type_list("int", fields, options)
-    float_dynamic_type = create_data_type_list("float", fields, options)
+    int_dynamic_type = create_data_type_set("int", fields, options)
+    float_dynamic_type = create_data_type_set("float", fields, options)
     sampleID_rundirectory_barcode_list = []
     sampleID_list = []
     # Apply corrections to data
