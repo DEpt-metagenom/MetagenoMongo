@@ -164,11 +164,6 @@ def save():
     user_name = request.form["user_name"]
     errors = defaultdict(list)
     email.email_env_check(errors)
-    if not check_user(user_name):
-        errors['fatal_error']='unauthorized user. Please contact the database admin'
-        data = pd.DataFrame(data_list, columns=fields)
-        return render_template('index_with_table.html', \
-                    tables=[data.to_html(classes='data', header="true")], errors=errors, df=data)
     df = pd.DataFrame(data_list, columns=fields)
     df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
     data_validation.validation_all( fields, options, errors, df)
