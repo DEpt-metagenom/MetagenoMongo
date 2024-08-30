@@ -39,12 +39,6 @@ headers_file = os.path.join(script_dir, '.metagenomongo.csv')
 options = load.load_options(headers_file)
 fields = list(options.keys())
 
-# email env error:
-def email_env_check(errors):
-    if os.getenv('RECIPIENT_EMAIL') == None:
-        errors['warning'].append('RECIPIENT_EMAIL is not set. The automatic email notification is turned off.\
-                                 Please notify the database admins to let them know about the uploaded file.')
-
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[-1].lower() in ALLOWED_EXTENSIONS
@@ -140,7 +134,7 @@ def empty_check(last_data):
 def change():
     data_list = parse_form_data(request.form)
     errors = defaultdict(list)
-    email_env_check(errors)
+    email.email_env_check(errors)
     data = pd.DataFrame(data_list, columns=fields)
     data_validation.validation_all( fields, options, errors, data)
     return render_template('index_with_table.html', \
@@ -152,7 +146,7 @@ def change():
 def addLine():
     data_list = parse_form_data(request.form)
     errors = defaultdict(list)
-    email_env_check(errors)
+    email.email_env_check(errors)
     data = pd.DataFrame(data_list, columns=fields)
     data_validation.validation_all( fields, options, errors, data)
     new_data = data.iloc[-1]
@@ -169,7 +163,7 @@ def save():
     data_list = parse_form_data(request.form)
     user_name = request.form["user_name"]
     errors = defaultdict(list)
-    email_env_check(errors)
+    email.email_env_check(errors)
     if not check_user(user_name):
         errors['fatal_error']='unauthorized user. Please contact the database admin'
         data = pd.DataFrame(data_list, columns=fields)
@@ -199,7 +193,7 @@ def index():
     # row, column_name, error type
     data = pd.DataFrame()
     errors = defaultdict(list)
-    email_env_check(errors)
+    email.email_env_check(errors)
     values = {"default": 0}
     if request.method == 'POST':
         # Handle CSV upload

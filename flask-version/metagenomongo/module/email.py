@@ -3,6 +3,11 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import os
 
+def email_env_check(errors):
+    if os.getenv('RECIPIENT_EMAIL') == None:
+        errors['warning'].append('RECIPIENT_EMAIL is not set. The automatic email notification is turned off.\
+                                 Please notify the database admins to let them know about the uploaded file.')
+
 def send_email(file_name, remote_path):
     # Set up the MIME
     sender_email = os.getenv('SENDER_EMAIL')
