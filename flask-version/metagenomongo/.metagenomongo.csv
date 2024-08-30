@@ -85,3 +85,5 @@ TEIMIC,float,,dynamic
 VAMIC,float,,dynamic
 ATM,int,,dynamic
 FFC,int,,dynamic
+Delete,str,,dynamic
+Duplicate,str,,dynamic

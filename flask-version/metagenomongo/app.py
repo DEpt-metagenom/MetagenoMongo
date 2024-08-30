@@ -83,13 +83,14 @@ def check_user(user_name):
     return user_hash.hexdigest() in user_hashes
 
 def parse_form_data(form_data):
+    # 88 columns passed, passed data had 86 columns
     data_list = []
     tmp = []
     count = 0
     for key, value in form_data.items():
         tmp.append(value)
         count += 1
-        if count == 86:
+        if "87" in key:
             data_list.append(tmp)
             tmp = []
             count = 0
@@ -147,6 +148,7 @@ def addLine():
     data_list = parse_form_data(request.form)
     errors = defaultdict(list)
     email.email_env_check(errors)
+    # 88 columns passed, passed data had 86 columns
     data = pd.DataFrame(data_list, columns=fields)
     data_validation.validation_all( fields, options, errors, data)
     new_data = data.iloc[-1]
@@ -164,6 +166,11 @@ def save():
     user_name = request.form["user_name"]
     errors = defaultdict(list)
     email.email_env_check(errors)
+    if not check_user(user_name):
+        errors['fatal_error']='unauthorized user. Please contact the database admin'
+        data = pd.DataFrame(data_list, columns=fields)
+        return render_template('index_with_table.html', \
+                    tables=[data.to_html(classes='data', header="true")], errors=errors, df=data)
     df = pd.DataFrame(data_list, columns=fields)
     df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
     data_validation.validation_all( fields, options, errors, df)
