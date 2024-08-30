@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, send_file
+from flask import Flask, request, render_template, send_file, current_app
 import os
 import pandas as pd
 from werkzeug.utils import secure_filename
@@ -6,19 +6,32 @@ import io
 import datetime
 import subprocess
 import hashlib
-from werkzeug.datastructures import ImmutableMultiDict, MultiDict
+from werkzeug.datastructures import MultiDict
+from collections import defaultdict
+import logging
 
 import module.load as load
 import module.validation as data_validation
 import module.email as email
 
 app = Flask(__name__)
-secret_key = os.getenv('FLASK_SK')
-if not secret_key:
-    raise ValueError("FLASK_SK environment variable is not set")
-app.secret_key = secret_key
+
+app.secret_key = os.urandom(10)
+# Note: This application currently does not utilize cookies, session management, CSRF protection, or any features that require a consistent secret key.
+# Therefore, we are using os.urandom() to generate a cryptographically secure random secret key at startup.
+# This approach is suitable for the current use case, but if any features that depend on the secret key are introduced in the future,
+# it will be necessary to ensure the secret key remains consistent across application restarts.
+# Future developers should revisit this decision if the application's requirements change.
 UPLOAD_FOLDER = 'uploads'
 ALLOWED_EXTENSIONS = {'csv', 'xlsx'}
+
+
+# --please comment out this part if you run the app on your labtop--
+if os.getenv('META_REMOTE_PATH') is None or os.getenv('META_KEY_PATH') is None:
+    current_app.logger.error("META_REMOTE_PATH or META_KEY_PATH is missing.")
+    raise EnvironmentError("Required environment variables are not set.")
+# --
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -82,27 +95,34 @@ def parse_form_data(form_data):
             count = 0
     return data_list
 
-def save_file_server(output_value,file_name):
+def save_file_server(output_value,file_name,errors):
+    remote_path = os.getenv('META_REMOTE_PATH')
+    key_path = os.getenv('META_KEY_PATH')
+    if remote_path is None or key_path is None:
+        errors['warning'].append("Set META_KEY_PATH and/or META_REMOTE_PATH.")
+        return
+    # absolute path of the current directory
     path = os.getcwd()
     filepath = os.path.join(path, app.config['UPLOAD_FOLDER'], file_name)
-    # print(filepath)
     try:
         with open(filepath, 'w', encoding='utf-8') as f:
             f.write(output_value)
-    except:
-        print()
-    remote_path = os.getenv('META_REMOTE_PATH')
-    key_path = os.getenv('META_KEY_PATH')
-    # print(f"key_path:{key_path}")
-    # print(f"remote_path:{remote_path}")
-    scp_command = ['scp', '-i', key_path, filepath, remote_path]
+        logging.info(f"File {file_name} saved successfully.")
+    except FileNotFoundError:
+        logging.error("File path does not exist.")
+    except PermissionError:
+        logging.error("Permission denied.")
+    
     try:
+        scp_command = ['scp', '-i', key_path, filepath, remote_path]
         subprocess.run(scp_command, check=True)
+        email.send_email(file_name, remote_path) 
         print(f"File successfully transferred to {remote_path}")
     except subprocess.CalledProcessError as e:
         print(f"An error occurred: {e}")
-    # finally:
-        # os.remove(filepath)
+        print("Run in the root directory on the gpu2")
+    finally:
+        os.remove(filepath)
 
 def empty_check(last_data):
     for n in last_data:
@@ -113,59 +133,53 @@ def empty_check(last_data):
 @app.route('/change', methods=['POST'])
 def change():
     data_list = parse_form_data(request.form)
-    results = []
-    values = {"default": 0}
+    errors = defaultdict(list)
+    email.email_env_check(errors)
     data = pd.DataFrame(data_list, columns=fields)
-    data_validation.validation_all( fields, options, results, data)
+    data_validation.validation_all( fields, options, errors, data)
     return render_template('index_with_table.html', \
                 tables=[data.to_html(classes='data', header="true")], \
-                fields=fields, results=results, values=values, \
+                errors=errors, \
                 df=data, user_name=request.form["user_name"])
 
 @app.route('/addLine', methods=['POST'])
 def addLine():
     data_list = parse_form_data(request.form)
-    results = []
-    values = {"default": 0}
+    errors = defaultdict(list)
+    email.email_env_check(errors)
     data = pd.DataFrame(data_list, columns=fields)
-    data_validation.validation_all( fields, options, results, data)
+    data_validation.validation_all( fields, options, errors, data)
     new_data = data.iloc[-1]
     if empty_check(new_data):
         data.loc[len(data)] = new_data
         data.at[len(data)-1,'sampleID'] = ''
     return render_template('index_with_table.html', \
                 tables=[data.to_html(classes='data', header="true")], \
-                fields=fields, results=results, values=values, \
+                errors=errors, \
                 df=data, user_name=request.form["user_name"])
 
 @app.route('/save', methods=['GET', 'POST'])
 def save():
     data_list = parse_form_data(request.form)
     user_name = request.form["user_name"]
-    values = {"default": 0}
-    results = []
-    if not check_user(user_name):
-        results.append({'error':'unauthorized user. Please contact the database admin'})
-        data = pd.DataFrame(data_list, columns=fields)
-        return render_template('index_with_table.html', \
-                    tables=[data.to_html(classes='data', header="true")], fields=fields, results=results, values=values, df=data)
+    errors = defaultdict(list)
+    email.email_env_check(errors)
     df = pd.DataFrame(data_list, columns=fields)
     df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
-    data_validation.validation_all( fields, options, results, df)
-    if results:
+    data_validation.validation_all( fields, options, errors, df)
+    if errors['fatal_error']:
         return render_template('index_with_table.html', \
             tables=[df.to_html(classes='data', header="true")], \
-            fields=fields, results=results, values=values, \
+            errors=errors, \
             df=df, user_name=request.form["user_name"])
     output = io.StringIO()
     df.to_csv(output, index=False)
     mem = io.BytesIO()
     mem.write(output.getvalue().encode('utf-8'))
     mem.seek(0)
-    email.send_email() 
     current_time = datetime.datetime.now()
     file_name = user_name + current_time.strftime('_%Y-%m-%d-%H-%M-%S') +".csv"
-    save_file_server(output.getvalue(),file_name)
+    save_file_server(output.getvalue(),file_name,errors)
     return send_file(mem, mimetype='text/csv', \
                      as_attachment=True, download_name=file_name)
 
@@ -173,10 +187,16 @@ def save():
 def index():
     # row, column_name, error type
     data = pd.DataFrame()
-    results = []
+    errors = defaultdict(list)
+    email.email_env_check(errors)
     values = {"default": 0}
     if request.method == 'POST':
         # Handle CSV upload
+        user_name = request.form["user_name"]
+        if not check_user(user_name):
+            errors['fatal_error'].append('unauthorized user. Please contact the database admin')
+            return render_template('index.html', \
+                tables=[data.to_html(classes='data', header="true")], fields=fields, errors=errors, values=values, df=data)
         if 'file' in request.files:
             file = request.files['file']
             if file:
@@ -186,9 +206,9 @@ def index():
                 try:
                     file.save(filepath)
                 except FileNotFoundError:
-                    results.append({'error':'Please run it in the MetagenoMongo.'})
+                    errors['fatal_error'].append('Please run it in the MetagenoMongo.')
                     return render_template('index_with_table.html', \
-                    tables=[data.to_html(classes='data', header="true")], fields=fields, results=results, values=values, df=data)
+                    tables=[data.to_html(classes='data', header="true")], errors=errors, df=data)
                 _, ext = os.path.splitext(file.filename)
                 if ext == '.csv':
                     df_temp = pd.read_csv(filepath, dtype=str)  # Load as strings
@@ -196,10 +216,9 @@ def index():
                     df_temp = pd.read_excel(filepath, dtype=str)  # Load as strings
                 else:
                     os.remove(filepath)
-                    results = []
-                    results.append({'error':'Invalid file type'})
+                    errors['fatal_error'].append('Invalid file type')
                     return render_template('index_with_table.html', \
-                    tables=[data.to_html(classes='data', header="true")], fields=fields, results=results, values=values, df=data)
+                    tables=[data.to_html(classes='data', header="true")], errors=errors, df=data)
                 # Strip whitespace from headers
                 df_temp.columns = df_temp.columns.str.strip()
                 # Strip whitespace from data
@@ -213,24 +232,19 @@ def index():
                 # Identify headers in the input file that do not appear in the expected headers
                 incorrect_fields = [header for header in imported_fields if header not in fields]
                 if incorrect_fields:
-                    result= {"error":"Input file contains unexpected fields :::" + ",".join(incorrect_fields)}
-                    results.append(result)
+                    os.remove(filepath)
+                    errors["fatal_error"].append("Input file contains unexpected fields :::" + ",".join(incorrect_fields))
                     return render_template('index.html', \
-                    fields=fields, values=values, results=results)
+                    fields=fields, values=values, errors=errors)
                 else:
                     # No incorrect headers, just update the table
                     df_temp = df_temp.reindex(columns=fields, fill_value='')
                     data_validation.validation_all(fields,\
-                                    options, results, df_temp)  
+                                    options, errors, df_temp)  
                 os.remove(filepath)
-                user_name = request.form["user_name"]
-                if not check_user(user_name):
-                    results.append({'error':'unauthorized user. Please contact the database admin'})
-                    return render_template('index.html', \
-                    tables=[data.to_html(classes='data', header="true")], fields=fields, results=results, values=values, df=data)                           
                 return render_template('index_with_table.html', \
                     tables=[df_temp.to_html(classes='data', header="true")], \
-                    fields=fields, values=values, results=results, df=df_temp, user_name=user_name)
+                    errors=errors, df=df_temp, user_name=user_name)
         # Handle manual data entry
         if request.form:
             values = MultiDict(request.form)
@@ -239,28 +253,21 @@ def index():
             result = data_validation.data_assign(fields, values)
             data = pd.DataFrame(result["data"],columns=fields)
             result.pop("data", None)
-            data_validation.validation_all( fields, options, results, data)
+            data_validation.validation_all( fields, options, errors, data)
             user_name = request.form["user_name"]
             action = request.form["action"]
-            if not check_user(user_name):
-                results.append({'error':'unauthorized user. Please contact the database admin'})
-                return render_template('index.html', \
-                    tables=[data.to_html(classes='data', header="true")], fields=fields, results=results, values=values, df=data)
-            # action = new_line or validate
+            # this part causes bugs when add 'Delete' and 'Duplicate' columuns
             if action == "new_line":
                 new_data = data.iloc[-1]
                 if empty_check(new_data):
                     data.loc[len(data)] = new_data
                     data.at[len(data)-1,'sampleID'] = ''
-                    return render_template('index_with_table.html', \
-                    tables=[data.to_html(classes='data', header="true")], fields=fields, results=results, values=values, df=data, user_name=user_name)
                 else:
-                    results.append({'error':'No data available.'})
-                    return render_template('index_with_table.html', \
-                    tables=[data.to_html(classes='data', header="true")], fields=fields, results=results, values=values, df=data, user_name=user_name)
+                    errors['fatal_error'].append('No data available.')
             return render_template('index_with_table.html', \
-                    tables=[data.to_html(classes='data', header="true")], fields=fields, results=results, values=values, df=data, user_name=user_name)
-    return render_template('index.html', tables=[], fields=fields, results=results, values=values)
+                    tables=[data.to_html(classes='data', header="true")], errors=errors, df=data, user_name=user_name)
+    
+    return render_template('index.html', tables=[], fields=fields, errors=errors, values=values)
 
 if __name__ == '__main__':
     app.run(debug=True)
