@@ -83,15 +83,15 @@ def check_user(user_name):
     return user_hash.hexdigest() in user_hashes
 
 def parse_form_data(form_data):
-    # 88 columns passed, passed data had 86 columns
     data_list = []
     tmp = []
     for key, value in form_data.items():
         tmp.append(value)
-        if "87" in key:
+        if "85" in key:
+            tmp.append("") # value for the delete column
+            tmp.append("") # value for the duplicate column
             data_list.append(tmp)
             tmp = []
-
     return data_list
 
 def save_file_server(output_value,file_name,errors):
@@ -146,7 +146,6 @@ def addLine():
     data_list = parse_form_data(request.form)
     errors = defaultdict(list)
     email.email_env_check(errors)
-    # 88 columns passed, passed data had 86 columns
     data = pd.DataFrame(data_list, columns=fields)
     data_validation.validation_all( fields, options, errors, data)
     new_data = data.iloc[-1]
