@@ -86,14 +86,12 @@ def parse_form_data(form_data):
     # 88 columns passed, passed data had 86 columns
     data_list = []
     tmp = []
-    count = 0
     for key, value in form_data.items():
         tmp.append(value)
-        count += 1
         if "87" in key:
             data_list.append(tmp)
             tmp = []
-            count = 0
+
     return data_list
 
 def save_file_server(output_value,file_name,errors):
@@ -172,6 +170,7 @@ def save():
         return render_template('index_with_table.html', \
                     tables=[data.to_html(classes='data', header="true")], errors=errors, df=data)
     df = pd.DataFrame(data_list, columns=fields)
+    df = df.drop(columns=['Delete', 'Duplicate'])
     df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
     data_validation.validation_all( fields, options, errors, df)
     if errors['fatal_error']:
