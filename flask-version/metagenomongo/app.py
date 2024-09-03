@@ -27,9 +27,9 @@ ALLOWED_EXTENSIONS = {'csv', 'xlsx'}
 
 
 # --please comment out this part if you run the app on your labtop--
-if os.getenv('META_REMOTE_PATH') is None or os.getenv('META_KEY_PATH') is None:
-    current_app.logger.error("META_REMOTE_PATH or META_KEY_PATH is missing.")
-    raise EnvironmentError("Required environment variables are not set.")
+# if os.getenv('META_REMOTE_PATH') is None or os.getenv('META_KEY_PATH') is None:
+#     current_app.logger.error("META_REMOTE_PATH or META_KEY_PATH is missing.")
+#     raise EnvironmentError("Required environment variables are not set.")
 # --
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -129,6 +129,14 @@ def empty_check(last_data):
             return True
     return False
 
+def data_list_check(data_list, errors, data):
+    if not data_list: # data is empty
+        errors["fatal_error"] = "No Data"
+        return render_template('index_with_table.html', \
+            tables=[data.to_html(classes='data', header="true")], \
+            errors=errors, \
+            df=data, user_name=request.form["user_name"])
+
 @app.route('/change', methods=['POST'])
 def change():
     data_list = parse_form_data(request.form)
@@ -147,6 +155,12 @@ def addLine():
     errors = defaultdict(list)
     email.email_env_check(errors)
     data = pd.DataFrame(data_list, columns=fields)
+    if not data_list: # no rows
+        errors["fatal_error"] = "No Data"
+        return render_template('index_with_table.html', \
+            tables=[data.to_html(classes='data', header="true")], \
+            errors=errors, \
+            df=data, user_name=request.form["user_name"])
     data_validation.validation_all( fields, options, errors, data)
     new_data = data.iloc[-1]
     if empty_check(new_data):
@@ -163,22 +177,17 @@ def save():
     user_name = request.form["user_name"]
     errors = defaultdict(list)
     email.email_env_check(errors)
-    if not check_user(user_name):
-        errors['fatal_error']='unauthorized user. Please contact the database admin'
-        data = pd.DataFrame(data_list, columns=fields)
-        return render_template('index_with_table.html', \
-                    tables=[data.to_html(classes='data', header="true")], errors=errors, df=data)
-    df = pd.DataFrame(data_list, columns=fields)
-    df = df.drop(columns=['Delete', 'Duplicate'])
-    df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
-    data_validation.validation_all( fields, options, errors, df)
+    data = pd.DataFrame(data_list, columns=fields)
+    data = data.drop(columns=['Delete', 'Duplicate'])
+    data = data.loc[:, ~data.columns.str.contains('^Unnamed')]
+    data_validation.validation_all( fields, options, errors, data)
     if errors['fatal_error']:
         return render_template('index_with_table.html', \
-            tables=[df.to_html(classes='data', header="true")], \
+            tables=[data.to_html(classes='data', header="true")], \
             errors=errors, \
-            df=df, user_name=request.form["user_name"])
+            df=data, user_name=request.form["user_name"])
     output = io.StringIO()
-    df.to_csv(output, index=False)
+    data.to_csv(output, index=False)
     mem = io.BytesIO()
     mem.write(output.getvalue().encode('utf-8'))
     mem.seek(0)
@@ -255,6 +264,8 @@ def index():
             values = MultiDict(request.form)
             values.popitem()
             values.popitem()
+            values["Delete"] = ""
+            values["Duplicate"] = ""
             result = data_validation.data_assign(fields, values)
             data = pd.DataFrame(result["data"],columns=fields)
             result.pop("data", None)
