@@ -27,9 +27,9 @@ ALLOWED_EXTENSIONS = {'csv', 'xlsx'}
 
 
 # --please comment out this part if you run the app on your labtop--
-# if os.getenv('META_REMOTE_PATH') is None or os.getenv('META_KEY_PATH') is None:
-#     current_app.logger.error("META_REMOTE_PATH or META_KEY_PATH is missing.")
-#     raise EnvironmentError("Required environment variables are not set.")
+if os.getenv('META_REMOTE_PATH') is None or os.getenv('META_KEY_PATH') is None:
+    current_app.logger.error("META_REMOTE_PATH or META_KEY_PATH is missing.")
+    raise EnvironmentError("Required environment variables are not set.")
 # --
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
