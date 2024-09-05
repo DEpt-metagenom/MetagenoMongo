@@ -24,7 +24,7 @@ app.secret_key = os.urandom(10)
 # Future developers should revisit this decision if the application's requirements change.
 UPLOAD_FOLDER = 'uploads'
 ALLOWED_EXTENSIONS = {'csv', 'xlsx'}
-
+FIELDS_PER_ENTRY = 85 # the number of data columns. 86 and 87 are for Delete and Duplicate.
 
 # --please comment out this part if you run the app on your labtop--
 if os.getenv('META_REMOTE_PATH') is None or os.getenv('META_KEY_PATH') is None:
@@ -87,9 +87,8 @@ def parse_form_data(form_data):
     tmp = []
     for key, value in form_data.items():
         tmp.append(value)
-        if "85" in key:
-            tmp.append("") # value for the delete column
-            tmp.append("") # value for the duplicate column
+        if str(FIELDS_PER_ENTRY) in key:
+            tmp.extend(["", ""])# Add empty strings for 'delete' and 'duplicate'
             data_list.append(tmp)
             tmp = []
     return data_list
@@ -129,13 +128,21 @@ def empty_check(last_data):
             return True
     return False
 
-def data_list_check(data_list, errors, data):
-    if not data_list: # data is empty
+def handle_empty_data(data_list, data, errors, user_name):
+    if not data_list:
         errors["fatal_error"] = "No Data"
-        return render_template('index_with_table.html', \
-            tables=[data.to_html(classes='data', header="true")], \
-            errors=errors, \
-            df=data, user_name=request.form["user_name"])
+        return render_template('index_with_table.html',
+            tables=[data.to_html(classes='data', header="true")],
+            errors=errors,
+            df=data, user_name=user_name)
+    return None
+
+
+def prepare_data_for_display(data):
+    display_data = data.copy()
+    display_data['Delete'] = ''
+    display_data['Duplicate'] = ''
+    return display_data
 
 @app.route('/change', methods=['POST'])
 def change():
@@ -155,12 +162,9 @@ def addLine():
     errors = defaultdict(list)
     email.email_env_check(errors)
     data = pd.DataFrame(data_list, columns=fields)
-    if not data_list: # no rows
-        errors["fatal_error"] = "No Data"
-        return render_template('index_with_table.html', \
-            tables=[data.to_html(classes='data', header="true")], \
-            errors=errors, \
-            df=data, user_name=request.form["user_name"])
+    empty_response = handle_empty_data(data_list, data, errors, request.form["user_name"])
+    if empty_response:
+        return empty_response
     data_validation.validation_all( fields, options, errors, data)
     new_data = data.iloc[-1]
     if empty_check(new_data):
@@ -182,10 +186,11 @@ def save():
     data = data.loc[:, ~data.columns.str.contains('^Unnamed')]
     data_validation.validation_all( fields, options, errors, data)
     if errors['fatal_error']:
+        display_data = prepare_data_for_display(data)
         return render_template('index_with_table.html', \
             tables=[data.to_html(classes='data', header="true")], \
             errors=errors, \
-            df=data, user_name=request.form["user_name"])
+            df=display_data, user_name=request.form["user_name"])
     output = io.StringIO()
     data.to_csv(output, index=False)
     mem = io.BytesIO()
