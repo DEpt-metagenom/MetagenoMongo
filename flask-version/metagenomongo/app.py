@@ -267,6 +267,10 @@ def index():
         # Handle manual data entry
         if request.form:
             values = MultiDict(request.form)
+            if len(values) == 1: # importing file is not selected
+                errors['fatal_error'].append('Choose an importing file.')
+                return render_template('index.html', tables=[],\
+                                        fields=fields, errors=errors, values=values)
             values.popitem()
             values.popitem()
             values["Delete"] = ""
