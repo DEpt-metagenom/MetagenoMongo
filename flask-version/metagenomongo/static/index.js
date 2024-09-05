@@ -28,27 +28,23 @@ function duplicateRow(button) {
   lastRow.parentNode.parentElement.after(cloneRow);
 }
 
+function setupButton(selector, type, value, color = null, onClick = null) {
+  document.querySelectorAll(selector).forEach(elm => {
+    elm.type = type;
+    elm.value = value;
+    if (color) {
+      elm.style.color = color;
+    }
+    if (onClick) {
+      elm.setAttribute('onclick', onClick);
+    }
+  });
+}
+
+
 window.addEventListener('load', function () {
-	// index_with_table
-    document.querySelectorAll('input[name$="86"]').forEach(elm => {
-		elm.type = "button"
-    elm.value = "X"
-    elm.style.color="red"
-    elm.setAttribute('onclick', 'deleteRow(this)');
-	});
-    document.querySelectorAll('input[name$="87"]').forEach(elm => {
-		elm.type = "button"
-    elm.value ="Dupl"
-    elm.setAttribute('onclick', 'duplicateRow(this)');
-	});
-    // index.html
-    document.querySelectorAll('input[name="Delete"]').forEach(elm => {
-		elm.type = "button"
-    elm.value = "X"
-    elm.style.color="red"
-	});
-    document.querySelectorAll('input[name="Duplicate"]').forEach(elm => {
-		elm.type = "button"
-    elm.value ="Dupl"
-	});
+	setupButton('input[name$="86"]', 'button', 'X', 'red', 'deleteRow(this)');
+  setupButton('input[name$="87"]', 'button', 'Dupl', null, 'duplicateRow(this)');
+  setupButton('input[name="Delete"]', 'button', 'X', 'red');
+  setupButton('input[name="Duplicate"]', 'button', 'Dupl');
 });
