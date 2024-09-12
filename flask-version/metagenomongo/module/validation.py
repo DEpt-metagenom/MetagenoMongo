@@ -58,7 +58,9 @@ def validation_all(fields, options, errors, df_temp):
             field = fields[col_index]
             if isinstance(cell, str):
                 if field in DATE_FIELDS:
-                    if not date_pattern.match(cell):
+                    if field == "run_date" and cell == "":
+                        continue
+                    elif not date_pattern.match(cell):
                         invalid_date_messages.append(f"Invalid value in row {row_index + 1}, column '{field}': Expected data type: date")
                 if field in options and options[field]['combobox_type'] == 'fix' and options[field]['options']:
                     if cell not in options[field]['options']:
