@@ -36,25 +36,22 @@
                             </tbody>
                         </table>
                     </div>
-                    <div class="d-grid col-6 mx-auto"></div>
                     <input type="submit" value="Add new line" formaction="/addLine">
                     <input type="submit" value="Save Changes" formaction="/change">
-            </div>
+                    <span>User: {{user_name}}</span>
+                </div>
             <div class="d-grid col-6 mx-auto">
-                <p>{{user_name}}</p>
                 <input type="hidden" name="user_name" value="{{user_name}}">
                 {% if not errors.fatal_error%}
                 <button type="submit" formaction="/save">Save as csv</button>
             </div>
             {% endif %}
-            <div class="result">
-                {{ errors.fatal_error}}
-                {{ errors.warning}}
-            </div>
-
             </form>
         </div>
     </div>
-</div>
+    <div class="result">
+        {{ errors.fatal_error}}
+        {{ errors.warning}}
+    </div>
 </div>
 {% endblock %}

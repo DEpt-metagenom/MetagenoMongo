@@ -1,16 +1,23 @@
+html{
+    height: 100%;
+}
 body {
     font-family: 'Arial', sans-serif;
     background-color: #f8f9fa;
     color: #333;
-    line-height: 1.6;
     margin: 0;
     padding: 0;
+    height: 100%;
+    overflow: hidden;
+}
+h1{
+    margin-bottom: 0px;
 }
 
 .container {
     width: 95%;
     margin: 0 auto;
-    padding: 10px;
+    padding-top: 7px;
 }
 
 input[type="file"] {
@@ -30,7 +37,8 @@ input[type="file"] {
 }
 .table-wrap {
     overflow-x: scroll;
-    max-height: 400px;
+    max-height: 350px;
+    margin-bottom: 5px;
 }
 
 table {
@@ -40,7 +48,7 @@ table {
 }
 
 th, td {
-    padding: 12px 15px;
+    padding: 6px 8px;
     text-align: left;
     border-bottom: 1px solid #dee2e6;
 }
@@ -74,4 +82,13 @@ tr:hover {
 
 .form-label {
     display: block;
+}
+
+.result {
+    max-height: 140px;
+    overflow-y: auto;
+    margin-top: 5px;
+}
+span{
+    color: #007bff;
 }
