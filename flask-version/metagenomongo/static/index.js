@@ -43,8 +43,8 @@ function setupButton(selector, type, value, color = null, onClick = null) {
 
 
 window.addEventListener('load', function () {
-	setupButton('input[name$="86"]', 'button', 'X', 'red', 'deleteRow(this)');
-  setupButton('input[name$="87"]', 'button', 'Dupl', null, 'duplicateRow(this)');
+	setupButton('input[name$="87"]', 'button', 'X', 'red', 'deleteRow(this)');
+  setupButton('input[name$="88"]', 'button', 'Dupl', null, 'duplicateRow(this)');
   setupButton('input[name="Delete"]', 'button', 'X', 'red');
   setupButton('input[name="Duplicate"]', 'button', 'Dupl');
 });
