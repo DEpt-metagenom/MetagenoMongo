@@ -24,12 +24,12 @@ app.secret_key = os.urandom(10)
 # Future developers should revisit this decision if the application's requirements change.
 UPLOAD_FOLDER = 'uploads'
 ALLOWED_EXTENSIONS = {'csv', 'xlsx'}
-FIELDS_PER_ENTRY = 86 # the number of data columns. 86 and 87 are for Delete and Duplicate.
+FIELDS_PER_ENTRY = 88 # the number of data columns. 
 
 # --please comment out this part if you run the app on your labtop--
-# if os.getenv('META_REMOTE_PATH') is None or os.getenv('META_KEY_PATH') is None:
-#     current_app.logger.error("META_REMOTE_PATH or META_KEY_PATH is missing.")
-#     raise EnvironmentError("Required environment variables are not set.")
+if os.getenv('META_REMOTE_PATH') is None or os.getenv('META_KEY_PATH') is None:
+    current_app.logger.error("META_REMOTE_PATH or META_KEY_PATH is missing.")
+    raise EnvironmentError("Required environment variables are not set.")
 # --
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -93,15 +93,13 @@ def parse_form_data(form_data):
     data_list = []
     tmp = []
     for key, value in form_data.items():
-        # print(f"key :{key}, value:{value}")
         if "_0" in key: # Skip No column
+            tmp.extend(["", ""])# Add empty strings for 'delete' and 'duplicate'
             continue
         tmp.append(value)
         if str(FIELDS_PER_ENTRY) in key:
-            tmp.extend(["", ""])# Add empty strings for 'delete' and 'duplicate'
             data_list.append(tmp)
             tmp = []
-    # print(data_list)
     return data_list
 
 def save_file_server(output_value,file_name,errors):
@@ -199,11 +197,12 @@ def save():
     errors = defaultdict(list)
     email.email_env_check(errors)
     data = pd.DataFrame(data_list, columns=fields)
+    data_validation.validation_all( fields, options, errors, data)
     data = data.drop(columns=['Delete', 'Duplicate'])
     data = data.loc[:, ~data.columns.str.contains('^Unnamed')]
-    data_validation.validation_all( fields, options, errors, data)
     if errors['fatal_error']:
         display_data = prepare_data_for_display(data)
+        display_data = add_no_col(display_data)
         return render_template('index_with_table.html', \
             tables=[data.to_html(classes='data', header="true")], \
             errors=errors, \

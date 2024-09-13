@@ -20,7 +20,7 @@
                                 {% for row in range(df.shape[0]) %}
                                 <tr>
                                     {% for col in range(df.shape[1]) %}
-                                    {% if col == 0 or col == 1%}
+                                    {% if col == 0 or col == 3%}
                                     <td>
                                         <input type="hidden" name="{{ row }}_{{ col }}" value="{{ df.iloc[row, col] }}">
                                         <div>{{ df.iloc[row, col] }}</div>
@@ -54,4 +54,5 @@
         {{ errors.warning}}
     </div>
 </div>
+<script src="../static/index_with_table.js"></script>
 {% endblock %}

@@ -1,4 +1,6 @@
 Header Name,Data Type,Options,Type
+Duplicate,str,,dynamic
+Delete,str,,dynamic
 _id,str,,fix
 projectID,str,,dynamic
 sampleID,str,,dynamic
@@ -85,5 +87,3 @@ TEIMIC,float,,dynamic
 VAMIC,float,,dynamic
 ATM,int,,dynamic
 FFC,int,,dynamic
-Delete,str,,dynamic
-Duplicate,str,,dynamic
