@@ -124,10 +124,10 @@ def save_file_server(output_value,file_name,errors):
         scp_command = ['scp', '-i', key_path, filepath, remote_path]
         subprocess.run(scp_command, check=True)
         email.send_email(file_name, remote_path) 
-        print(f"File successfully transferred to {remote_path}")
+        logging.info(f"File successfully transferred to {remote_path}")
     except subprocess.CalledProcessError as e:
-        print(f"An error occurred: {e}")
-        print("Run in the root directory on the gpu2")
+        logging.error(f"An error occurred: {e}")
+        logging.info("Run in the app root directory on the gpu2")
     finally:
         os.remove(filepath)
 
@@ -288,8 +288,8 @@ def index():
                 errors['fatal_error'].append('Choose an importing file.')
                 return render_template('index.html', tables=[],\
                                         fields=fields, errors=errors, values=values)
-            values.popitem()
-            values.popitem()
+            values.popitem() # remove user_name
+            values.popitem() # remove action
             values["Delete"] = ""
             values["Duplicate"] = ""
             result = data_validation.data_assign(fields, values)
@@ -298,6 +298,7 @@ def index():
             data_validation.validation_all( fields, options, errors, data)
             user_name = request.form["user_name"]
             action = request.form["action"]
+            data = add_no_col(data)
             # this part causes bugs when add 'Delete' and 'Duplicate' columuns
             if action == "new_line":
                 new_data = data.iloc[-1]

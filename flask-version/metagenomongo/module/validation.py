@@ -7,13 +7,12 @@ date_pattern = re.compile(r'^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}\.\d{3}Z)?$')
 # accepted formats are YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS.fffZ
 def data_assign(fields, values):
     # Retrieve input values
-    data = []
-    new_entry = []
     result = {}
-    all_empty = True  # Flag to track if all input fields are empty
     result = {"data": [list(values.values())]}
-    if not any(values.values()):
-        result["error"] = "There is no data in the row"
+    result["data"][0].insert(0, '') # Duplicate
+    result["data"][0].insert(0, '') # Delete
+    result["data"][0].pop() # Duplicate
+    result["data"][0].pop() # Delete
     return result
 
 def create_data_type_set(data_type, fields, options):
