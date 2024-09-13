@@ -3,7 +3,7 @@ from datetime import datetime
 from collections import Counter
 
 DATE_FIELDS = ["collection_date", "run_date"]
-date_pattern = re.compile(r'^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}\.\d{3}Z)?$') 
+date_pattern = re.compile(r'^\d{4}(-\d{2}(-\d{2}(T\d{2}:\d{2}:\d{2}\.\d{3}Z)?)?)?$')
 # accepted formats are YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS.fffZ
 def data_assign(fields, values):
     # Retrieve input values
