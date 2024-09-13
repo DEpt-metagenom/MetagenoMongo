@@ -20,7 +20,7 @@
                     </div>
                 </div>
                 <div class="d-grid col-6 mx-auto pt-3">
-                    <input type="text" name="user_name" placeholder="user_name" required>
+                    <input type="text" name="user_name" id="user_name1" placeholder="user_name" required>
                     <button type="submit" class="btn btn-info" name="action" value="new_line">Add a new line</button>
                     <button type="submit" class="btn btn-info" name="action" value="validate">Add/Update</button>
                 </div>
@@ -32,7 +32,7 @@
                     <label for="file">Upload CSV File</label>
                     <input type="file" class="form-control-file" id="file" name="file">
                 </div>
-                <input type="text" name="user_name" placeholder="user_name" required>
+                <input type="hidden" name="user_name" id="user_name2" placeholder="user_name" required>
                 <button type="submit" class="btn btn-success w-25 h-25">Import file</button>
             </form>
         </div>
