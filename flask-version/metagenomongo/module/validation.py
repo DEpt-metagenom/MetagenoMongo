@@ -23,9 +23,7 @@ def validation_all(fields, options, errors, df_temp):
     df_temp = df_temp[~(df_temp == '').all(axis=1)]
     corrected_count = 0
     corrected_items = []
-    invalid_date_messages = []
     error_list =[]
-    invalid_combobox_messages = []
     data = df_temp.values.tolist()
     int_dynamic_type = create_data_type_set("int", fields, options)
     float_dynamic_type = create_data_type_set("float", fields, options)
@@ -61,17 +59,13 @@ def validation_all(fields, options, errors, df_temp):
                     if field == "run_date" and cell == "":
                         continue
                     elif not date_pattern.match(cell):
-                        invalid_date_messages.append(f"Invalid value in row {row_index + 1}, column '{field}': Expected data type: date")
                         error_list.append([row_index, field, "Invalid value. Expected data type: date"])
                 if field in options and options[field]['combobox_type'] == 'fix' and options[field]['options']:
                     if cell not in options[field]['options']:
-                        invalid_combobox_messages.append(f"Invalid value in row {row_index + 1}, column '{field}': Possible values are: '{options[field]['options']}'")
                         error_list.append([row_index, field, f"Invalid value. Possible values are: '{options[field]['options']}'"])
                 if field in int_dynamic_type:
                     if cell != "":
                         if not cell.isdigit():
-                            invalid_combobox_messages.append(\
-                            f"Invalid data type in row {row_index + 1}, column '{field}': Expected data type: int")
                             error_list.append([row_index, field, "Invalid value. Expected data type: int"])
                 if field in float_dynamic_type:
                     if cell != "":
@@ -79,14 +73,10 @@ def validation_all(fields, options, errors, df_temp):
                             float(cell)
                         except ValueError:
                             error_list.append([row_index, field, "Invalid value. Expected data type: float"])
-                            invalid_combobox_messages.append(\
-                            f"Invalid data type in row {row_index + 1}, column '{field}': Expected data type: float")
                 if field == "sampleID":
                     sampleID = cell
                     if sampleID == "":
                         error_list.append([row_index, field, "SampleID is necessary"])
-                        invalid_combobox_messages.append(\
-                            f"SampleID is necessary in row {row_index + 1}, column '{field}':")
                     else:
                         sampleID_list.append(sampleID)
                 if field == "run_directory" and sampleID != "":
@@ -112,26 +102,11 @@ def validation_all(fields, options, errors, df_temp):
                     if field == "run_directory":
                         if cell == "":
                             error_list.append([row_index, field, "run_directory is necessary"])
-                            invalid_combobox_messages.append(\
-                                f"run_directory is necessary in row {row_index + 1}, column '{field}':")                   
                         run_directory = cell
                     if field == "barcode":
                         if cell == "":
                             error_list.append([row_index, field, "Barcode is necessary"])
-                            invalid_combobox_messages.append(\
-                                f"Barcode is necessary in row {row_index + 1}, column '{field}':")
                         barcode = cell
             if f"{sampleID}{run_directory}{barcode}" in duplicate_sampleID_rundirectory_barcodes:
                 error_list.append([row_index, field, "Each pair of sampleID,rundirectory,barcode must be unique"])
-                invalid_combobox_messages.append(\
-                            f"Each pair of sampleID,rundirectory,barcode must be unique in row {row_index + 1}:")
-    # Prepare result text
-    if len(invalid_date_messages) != 0 or len(invalid_combobox_messages) != 0:
-        result_text = (
-                    f'Number of cells with invalid date: {len(invalid_date_messages)}\n'
-                    # f'Number of cells with invalid fixed data options: {len(invalid_combobox_messages)}\n'
-                    )
-        # Add detailed errors
-        detailed_errors = '\n'.join(invalid_date_messages + invalid_combobox_messages)
-        result_text += detailed_errors
-        errors['fatal_error'] = error_list
+    errors['fatal_error'] = error_list
