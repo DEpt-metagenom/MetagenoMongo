@@ -34,12 +34,20 @@ function setupButton(selector, type, value, color = null, onClick = null) {
     elm.value = value;
     if (onClick) {
       elm.setAttribute('onclick', onClick);
+    }else{
+      elm.classList.add("disabled")
     }
   });
 }
 
 
 window.addEventListener('load', function () {
-	setupButton('input[name$="_1"]', 'button', 'X', 'red', 'deleteRow(this)');
-  setupButton('input[name$="_2"]', 'button', 'Dupl', null, 'duplicateRow(this)');
+	setupButton('input[name$="_2"]', 'button', 'X', 'red', 'deleteRow(this)');
+  const id = document.querySelector('input[name$="_3"]');
+  if (id.value) // if _id exists, disable Duplicate function
+  {
+    setupButton('input[name$="_1"]', 'button', 'Dupl', null, null);
+  }else{
+    setupButton('input[name$="_1"]', 'button', 'Dupl', null, 'duplicateRow(this)');
+  }
 });

@@ -92,3 +92,6 @@ tr:hover {
 span{
     color: #007bff;
 }
+.disabled{
+    color: gainsboro;
+}
