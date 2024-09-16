@@ -170,7 +170,6 @@ def change():
 
 @app.route('/addLine', methods=['POST'])
 def addLine():
-    # remove
     data_list = parse_form_data(request.form)
     errors = defaultdict(list)
     email.email_env_check(errors)
@@ -179,7 +178,6 @@ def addLine():
     if empty_response:
         return empty_response
     data_validation.validation_all( fields, options, errors, data)
-    # add
     new_data = data.iloc[-1]
     if empty_check(new_data):
         data.loc[len(data)] = new_data
@@ -220,7 +218,6 @@ def save():
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
-    # row, column_name, error type
     data = pd.DataFrame()
     errors = defaultdict(list)
     email.email_env_check(errors)
@@ -298,14 +295,11 @@ def index():
             data_validation.validation_all( fields, options, errors, data)
             user_name = request.form["user_name"]
             action = request.form["action"]
-            # this part causes bugs when add 'Delete' and 'Duplicate' columuns
             if action == "new_line":
                 new_data = data.iloc[-1]
                 if empty_check(new_data):
                     data.loc[len(data)] = new_data
                     data.at[len(data)-1,'sampleID'] = ''
-                else:
-                    errors['fatal_error'].append('No data available.')
             data = add_no_col(data)
             return render_template('index_with_table.html', \
                     tables=[data.to_html(classes='data', header="true")], errors=errors, df=data, user_name=user_name)
