@@ -3,6 +3,7 @@ from datetime import datetime
 from collections import Counter
 
 DATE_FIELDS = ["collection_date", "run_date"]
+MANDATORY_COLUMNS = ("projectID", "project_directory", "sampleID")
 date_pattern = re.compile(r'^\d{4}(-\d{2}(-\d{2}(T\d{2}:\d{2}:\d{2}\.\d{3}Z)?)?)?$')
 # accepted formats are YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS.fffZ
 def data_assign(fields, values):
@@ -37,7 +38,6 @@ def validation_all(fields, options, errors, df_temp):
                 cell = re.sub(r'\s+', ' ', cell)
                 cell = cell.strip(',; ')
                 cell = re.sub(r',\s*(\S)', r'; \1', cell)
-                
                 # Apply specific column corrections
                 if fields[col_index] == "locality":
                     cell = re.sub(r':(?!\s)', ': ', cell)
@@ -50,10 +50,15 @@ def validation_all(fields, options, errors, df_temp):
                     corrected_count += 1
                     corrected_items.append(f'Row {row_index + 1}, Column {col_index + 1}: {original_cell} -> {cell}')
     # Validate data
+    print(f"validate")
+    if data == []:
+        error_list.append([0, "", "Empty data."])
+        print(f"data {data}")
     for row_index, row in enumerate(data):
         sampleID, run_directory, barcode = "", "", ""
         for col_index, cell in enumerate(row):
             field = fields[col_index]
+            print(f"field:{field}")
             if isinstance(cell, str):
                 if field in DATE_FIELDS:
                     if field == "run_date" and cell == "":
@@ -75,14 +80,14 @@ def validation_all(fields, options, errors, df_temp):
                             error_list.append([row_index, field, "Invalid value. Expected data type: float"])
                 if field == "sampleID":
                     sampleID = cell
-                    if sampleID == "":
-                        error_list.append([row_index, field, "SampleID is necessary"])
-                    else:
+                    if sampleID != "":
                         sampleID_list.append(sampleID)
                 if field == "run_directory" and sampleID != "":
                     run_directory = cell
                 if field == "barcode" and sampleID != "":
                     barcode = cell
+                if field in MANDATORY_COLUMNS and cell == "":
+                    error_list.append([row_index, field, f"{field} is necessary"])
         if sampleID != "":
             data_id = f"{sampleID}{run_directory}{barcode}"
             sampleID_rundirectory_barcode_list.append(data_id)

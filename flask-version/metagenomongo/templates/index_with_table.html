@@ -59,7 +59,7 @@
     <div class="result">
         {% for e in errors.fatal_error %}
         <div class="error-message" data-row="{{e[0]}}">
-            row:{{ e[0]+1 }}, col:{{ e[1] }} :{{ e[2] }}
+            row:{{ e[0]+1 }}, {{ e[1] }} :{{ e[2] }}
         </div>
         {% endfor %}
         <div>Warning: {{ errors.warning[0]}}</div>
