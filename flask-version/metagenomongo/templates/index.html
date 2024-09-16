@@ -39,8 +39,12 @@
     </div>
 </div>
 <div class="result">
-    {{ errors.fatal_error }}
-    {{ errors.warning }}
+    {% for e in errors.fatal_error%}
+    <div>{{e}}</div>
+    {% endfor %}
+    {% for e in errors.warning %}
+    <div>{{e}}</div>
+    {% endfor %}
 </div>
 <script src="../static/index.js"></script>
 {% endblock %}
