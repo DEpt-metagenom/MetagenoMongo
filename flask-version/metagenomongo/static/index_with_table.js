@@ -3,7 +3,7 @@ function deleteRow(button) {
   row.parentNode.removeChild(row);
 }
 function duplicateRow(button) {
-  var row = button.parentNode.parentNode;
+  var row = button.parentNode.parentNode.parentNode;
   var cloneRow =row.cloneNode(true);
   const elements = document.querySelectorAll('input[name$="87"]');
   const lastRow = elements[elements.length - 1];
