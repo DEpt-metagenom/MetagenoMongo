@@ -47,11 +47,9 @@
                     <input type="submit" value="Save Changes" formaction="/change">
                     <span>User: {{user_name}}</span>
                 </div>
-            <div class="d-grid col-6 mx-auto">
                 <input type="hidden" name="user_name" value="{{user_name}}">
                 {% if not errors.fatal_error%}
-                <button type="submit" formaction="/save">Save as csv</button>
-            </div>
+                <button type="submit" formaction="/save" id="save_as_csv">Save as csv</button>
             {% endif %}
             </form>
         </div>
@@ -59,7 +57,7 @@
     <div class="result">
         {% for e in errors.fatal_error %}
         <div class="error-message" data-row="{{e[0]}}">
-            row:{{ e[0]+1 }}, {{ e[1] }} :{{ e[2] }}
+            row:{{ e[0] }}, {{ e[1] }} :{{ e[2] }}
         </div>
         {% endfor %}
         <div>Warning: {{ errors.warning[0]}}</div>

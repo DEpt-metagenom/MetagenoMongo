@@ -121,3 +121,9 @@ span{
     visibility: visible;
     opacity: 1;
 }
+#save_as_csv{
+    width: 150px;
+    display: block;
+    margin: auto;
+    color: #007bff;
+}
