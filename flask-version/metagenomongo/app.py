@@ -252,9 +252,9 @@ def index():
                 file_name, ext = os.path.splitext(file.filename)
                 # file_name, ext = os.path.splitext(file_name)
                 if ext == '.csv':
-                    data = pd.read_csv(filepath, dtype=str, parse_dates=['collection_date', 'run_date'], date_parser=custom_date_parser)  # Load as strings
+                    data = pd.read_csv(filepath, dtype=str, parse_dates=['collection_date', 'run_date'], date_format=custom_date_parser)  # Load as strings
                 elif ext == '.xlsx':
-                    data = pd.read_excel(filepath, dtype=str, parse_dates=['collection_date', 'run_date'], date_parser=custom_date_parser)
+                    data = pd.read_excel(filepath, dtype=str, parse_dates=['collection_date', 'run_date'], date_format=custom_date_parser)
                 else:
                     os.remove(filepath)
                     errors['fatal_error'].append('Invalid file type')
