@@ -137,6 +137,14 @@ def empty_check(last_data):
             return True
     return False
 
+def custom_date_parser(x):
+    if len(x) == 4:
+        return pd.to_datetime(x, format='%Y').date()
+    elif len(x) == 7:
+        return pd.to_datetime(x, format='%Y-%m').date()
+    else:
+        return pd.to_datetime(x).date()
+
 def handle_empty_data(data_list, data, errors, user_name):
     for l in data_list:
         for df in l:
@@ -241,11 +249,12 @@ def index():
                     errors['fatal_error'].append('Please run it in the MetagenoMongo.')
                     return render_template('index_with_table.html', \
                     tables=[data.to_html(classes='data', header="true")], errors=errors, df=data)
-                _, ext = os.path.splitext(file.filename)
+                file_name, ext = os.path.splitext(file.filename)
+                # file_name, ext = os.path.splitext(file_name)
                 if ext == '.csv':
-                    data = pd.read_csv(filepath, dtype=str)  # Load as strings
+                    data = pd.read_csv(filepath, dtype=str, parse_dates=['collection_date', 'run_date'], date_parser=custom_date_parser)  # Load as strings
                 elif ext == '.xlsx':
-                    data = pd.read_excel(filepath, dtype=str)  # Load as strings
+                    data = pd.read_excel(filepath, dtype=str, parse_dates=['collection_date', 'run_date'], date_parser=custom_date_parser)
                 else:
                     os.remove(filepath)
                     errors['fatal_error'].append('Invalid file type')
@@ -307,4 +316,4 @@ def index():
     return render_template('index.html', tables=[], fields=fields, errors=errors, values=values)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host="0.0.0.0")
