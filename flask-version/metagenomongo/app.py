@@ -150,7 +150,7 @@ def handle_empty_data(data_list, data, errors, user_name):
         for df in l:
             if df != "":
                 return None
-    errors["fatal_error"] = "No Data"
+    errors["warning"].append("No Data")
     data = add_no_col(data)
     return render_template('index_with_table.html',
             tables=[data.to_html(classes='data', header="true")],
