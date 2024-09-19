@@ -4,6 +4,7 @@ from collections import Counter
 
 DATE_FIELDS = ["collection_date", "run_date"]
 MANDATORY_COLUMNS = ("projectID", "project_directory", "sampleID")
+COLUMNS_WITH_DISALLOWED_SPECIAL_CHARACTERS = ("projectID", "project_directory", "sampleID", "run_directory")
 date_pattern = re.compile(r'^\d{4}(-\d{2}(-\d{2}(T\d{2}:\d{2}:\d{2}\.\d{3}Z)?)?)?$')
 # accepted formats are YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS.fffZ
 def data_assign(fields, values):
@@ -15,6 +16,10 @@ def data_assign(fields, values):
     result["data"][0].pop() # Duplicate
     result["data"][0].pop() # Delete
     return result
+
+def contains_special_characters(s):
+    pattern = re.compile(r'[^a-zA-Z0-9-_]')
+    return bool(pattern.search(s))
 
 def create_data_type_set(data_type, fields, options):
     return {field for field in fields if data_type == options[field]['datatype']}
@@ -50,15 +55,12 @@ def validation_all(fields, options, errors, df_temp):
                     corrected_count += 1
                     corrected_items.append(f'Row {row_index + 1}, Column {col_index + 1}: {original_cell} -> {cell}')
     # Validate data
-    print(f"validate")
     if data == []:
         error_list.append([0, "", "Empty data."])
-        print(f"data {data}")
     for row_index, row in enumerate(data):
         sampleID, run_directory, barcode = "", "", ""
         for col_index, cell in enumerate(row):
             field = fields[col_index]
-            print(f"field:{field}")
             if isinstance(cell, str):
                 if field in DATE_FIELDS:
                     if field == "run_date" and cell == "":
@@ -72,22 +74,27 @@ def validation_all(fields, options, errors, df_temp):
                     if cell != "":
                         if not cell.isdigit():
                             error_list.append([row_index, field, "Invalid value. Expected data type: int"])
-                if field in float_dynamic_type:
+                elif field in float_dynamic_type:
                     if cell != "":
                         try:
                             float(cell)
                         except ValueError:
                             error_list.append([row_index, field, "Invalid value. Expected data type: float"])
+                if field == "run_directory" and sampleID != "":
+                    run_directory = cell
+                elif field == "barcode" and sampleID != "":
+                    barcode = cell
+                elif field in MANDATORY_COLUMNS and cell == "":
+                    error_list.append([row_index, field, f"{field} is necessary"])
+                elif field in COLUMNS_WITH_DISALLOWED_SPECIAL_CHARACTERS:
+                    if contains_special_characters(cell):
+                        error_list.append([row_index, field, f"{field}\
+                            Only alphanumeric characters, hyphens, and underscores are allowed."])
                 if field == "sampleID":
                     sampleID = cell
                     if sampleID != "":
                         sampleID_list.append(sampleID)
-                if field == "run_directory" and sampleID != "":
-                    run_directory = cell
-                if field == "barcode" and sampleID != "":
-                    barcode = cell
-                if field in MANDATORY_COLUMNS and cell == "":
-                    error_list.append([row_index, field, f"{field} is necessary"])
+                    
         if sampleID != "":
             data_id = f"{sampleID}{run_directory}{barcode}"
             sampleID_rundirectory_barcode_list.append(data_id)
