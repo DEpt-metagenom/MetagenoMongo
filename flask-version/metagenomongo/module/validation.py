@@ -4,9 +4,10 @@ from collections import Counter
 DATE_FIELDS = ["collection_date", "run_date"]
 MANDATORY_COLUMNS = ("projectID", "project_directory", "sampleID")
 COLUMNS_WITH_DISALLOWED_SPECIAL_CHARACTERS = ("projectID", "project_directory", "sampleID", "run_directory")
+
 DATE_PATTERN = re.compile(r'^\d{4}(-\d{2}(-\d{2}(T\d{2}:\d{2}:\d{2}\.\d{3}Z)?)?)?$')
 SPECIAL_CHAR_PATTERN = re.compile(r'[^a-zA-Z0-9-_]')
-# accepted formats are YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS.fffZ
+
 def data_assign(fields, values):
     # Retrieve input values
     result = {}

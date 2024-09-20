@@ -34,12 +34,11 @@ if os.getenv('META_REMOTE_PATH') is None or os.getenv('META_KEY_PATH') is None:
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-script_dir = os.path.dirname(os.path.abspath(__file__))
-headers_file = os.path.join(script_dir, '.metagenomongo.csv')
-options = load.load_options(headers_file)
-fields = list(options.keys())
-fields_with_no = fields[:]
-fields_with_no.insert(0,'No')
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+OPTIONS = load.load_options(os.path.join(SCRIPT_DIR, '.metagenomongo.csv'))
+FIELDS = list(OPTIONS.keys())
+FIELDS_WITH_NO = FIELDS[:]
+FIELDS_WITH_NO.insert(0,'No')
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -47,7 +46,7 @@ def allowed_file(filename):
 
 def add_no_col(data):
     data['No'] = range(1, len(data.index) + 1)
-    data = data.reindex(columns=fields_with_no, fill_value='')
+    data = data.reindex(columns=FIELDS_WITH_NO, fill_value='')
     return data
 
 def check_user(user_name):
@@ -157,19 +156,56 @@ def handle_empty_data(data_list, data, errors, user_name):
             errors=errors,
             df=data, user_name=user_name)
 
-def prepare_data_for_display(data):
-    display_data = data.copy()
-    display_data['Delete'] = ''
-    display_data['Duplicate'] = ''
-    return display_data
+#remove user_name and action
+#add Delete and Duplicate
+def organize_form_data(values):
+    values.popitem() # user_name
+    values.popitem() # action
+    values["Delete"] = ""
+    values["Duplicate"] = ""
+
+def clean_imported_file(data):
+    # Strip whitespace from headers
+    data.columns = data.columns.str.strip()
+    # Strip whitespace from data
+    data = data.applymap(lambda x: x.strip() if isinstance(x, str) else x)
+    # Replace NaN with empty strings
+    data = data.fillna('')
+    # Remove fully empty rows
+    data = data[~(data == '').all(axis=1)]
+    return data
+
+def check_fields_of_imported_file(data, filepath, errors, values):
+    # Get actual headers from the temporary DataFrame
+    imported_fields = list(data.columns)
+    # Identify headers in the input file that do not appear in the expected headers
+    incorrect_fields = [header for header in imported_fields if header not in FIELDS]
+    if incorrect_fields:
+        os.remove(filepath)
+        errors["fatal_error"].append("Input file contains unexpected fields :::" + ",".join(incorrect_fields))
+        return render_template('index.html', \
+            fields=FIELDS, values=values, errors=errors)
+
+def read_imported_file(file, filepath, errors):
+    file_name, ext = os.path.splitext(file.filename)
+    if ext == '.csv':
+        data = pd.read_csv(filepath, dtype=str, parse_dates=['collection_date', 'run_date'], date_format=custom_date_parser)  # Load as strings
+    elif ext == '.xlsx':
+        data = pd.read_excel(filepath, dtype=str, parse_dates=['collection_date', 'run_date'], date_format=custom_date_parser)
+    else:
+        os.remove(filepath)
+        errors['fatal_error'].append('Invalid file type')
+        return render_template('index_with_table.html', \
+            tables=[data.to_html(classes='data', header="true")], errors=errors, df=data)
+    return data
 
 @app.route('/change', methods=['POST'])
 def change():
     data_list = parse_form_data(request.form)
     errors = defaultdict(list)
     email.email_env_check(errors)
-    data = pd.DataFrame(data_list, columns=fields)
-    data_validation.validation_all( fields, options, errors, data)
+    data = pd.DataFrame(data_list, columns=FIELDS)
+    data_validation.validation_all( FIELDS, OPTIONS, errors, data)
     data = add_no_col(data)
     return render_template('index_with_table.html', \
                 tables=[data.to_html(classes='data', header="true")], \
@@ -181,11 +217,11 @@ def addLine():
     data_list = parse_form_data(request.form)
     errors = defaultdict(list)
     email.email_env_check(errors)
-    data = pd.DataFrame(data_list, columns=fields)
+    data = pd.DataFrame(data_list, columns=FIELDS)
     empty_response = handle_empty_data(data_list, data, errors, request.form["user_name"])
     if empty_response:
         return empty_response
-    data_validation.validation_all( fields, options, errors, data)
+    data_validation.validation_all( FIELDS, OPTIONS, errors, data)
     new_data = data.iloc[-1]
     if empty_check(new_data):
         data.loc[len(data)] = new_data
@@ -202,17 +238,17 @@ def save():
     user_name = request.form["user_name"]
     errors = defaultdict(list)
     email.email_env_check(errors)
-    data = pd.DataFrame(data_list, columns=fields)
-    data_validation.validation_all( fields, options, errors, data)
+    data = pd.DataFrame(data_list, columns=FIELDS)
+    data_validation.validation_all( FIELDS, OPTIONS, errors, data)
     data = data.drop(columns=['Delete', 'Duplicate'])
     data = data.loc[:, ~data.columns.str.contains('^Unnamed')]
     if errors['fatal_error']:
-        display_data = prepare_data_for_display(data)
-        display_data = add_no_col(display_data)
+        data['Delete'] = ''
+        data['Duplicate'] = ''
+        data = add_no_col(data)
         return render_template('index_with_table.html', \
-            tables=[data.to_html(classes='data', header="true")], \
-            errors=errors, \
-            df=display_data, user_name=request.form["user_name"])
+            tables=[data.to_html(classes='data', header="true")], errors=errors, \
+            df=data, user_name=request.form["user_name"])
     output = io.StringIO()
     data.to_csv(output, index=False)
     mem = io.BytesIO()
@@ -234,9 +270,9 @@ def index():
         # Handle CSV upload
         user_name = request.form["user_name"]
         if not check_user(user_name):
-            errors['fatal_error'].append('unauthorized user. Please contact the database admin')
+            errors['fatal_error'].append('Unauthorized user. Please contact the database admin')
             return render_template('index.html', \
-                tables=[data.to_html(classes='data', header="true")], fields=fields, errors=errors, values=values, df=data)
+                tables=[data.to_html(classes='data', header="true")], fields=FIELDS, errors=errors, values=values, df=data)
         if 'file' in request.files:
             file = request.files['file']
             if file:
@@ -248,40 +284,12 @@ def index():
                 except FileNotFoundError:
                     errors['fatal_error'].append('Please run it in the MetagenoMongo.')
                     return render_template('index_with_table.html', \
-                    tables=[data.to_html(classes='data', header="true")], errors=errors, df=data)
-                file_name, ext = os.path.splitext(file.filename)
-                # file_name, ext = os.path.splitext(file_name)
-                if ext == '.csv':
-                    data = pd.read_csv(filepath, dtype=str, parse_dates=['collection_date', 'run_date'], date_format=custom_date_parser)  # Load as strings
-                elif ext == '.xlsx':
-                    data = pd.read_excel(filepath, dtype=str, parse_dates=['collection_date', 'run_date'], date_format=custom_date_parser)
-                else:
-                    os.remove(filepath)
-                    errors['fatal_error'].append('Invalid file type')
-                    return render_template('index_with_table.html', \
-                    tables=[data.to_html(classes='data', header="true")], errors=errors, df=data)
-                # Strip whitespace from headers
-                data.columns = data.columns.str.strip()
-                # Strip whitespace from data
-                data = data.applymap(lambda x: x.strip() if isinstance(x, str) else x)
-                # Replace NaN with empty strings
-                data = data.fillna('')
-                # Remove fully empty rows
-                data = data[~(data == '').all(axis=1)]
-                # Get actual headers from the temporary DataFrame
-                imported_fields = list(data.columns)
-                # Identify headers in the input file that do not appear in the expected headers
-                incorrect_fields = [header for header in imported_fields if header not in fields]
-                if incorrect_fields:
-                    os.remove(filepath)
-                    errors["fatal_error"].append("Input file contains unexpected fields :::" + ",".join(incorrect_fields))
-                    return render_template('index.html', \
-                    fields=fields, values=values, errors=errors)
-                else:
-                    # No incorrect headers, just update the table
-                    data = data.reindex(columns=fields, fill_value='')
-                    data_validation.validation_all(fields,\
-                                    options, errors, data)  
+                        tables=[data.to_html(classes='data', header="true")], errors=errors, df=data)
+                data = read_imported_file(file, filepath, errors)
+                data = clean_imported_file(data)
+                check_fields_of_imported_file(data, filepath, errors, values)
+                data = data.reindex(columns=FIELDS, fill_value='')
+                data_validation.validation_all(FIELDS, OPTIONS, errors, data) 
                 data = add_no_col(data)
                 os.remove(filepath)
                 return render_template('index_with_table.html', \
@@ -293,15 +301,10 @@ def index():
             if len(values) == 1: # importing file is not selected
                 errors['fatal_error'].append('Choose an importing file.')
                 return render_template('index.html', tables=[],\
-                                        fields=fields, errors=errors, values=values)
-            values.popitem() # remove user_name
-            values.popitem() # remove action
-            values["Delete"] = ""
-            values["Duplicate"] = ""
-            result = data_validation.data_assign(fields, values)
-            data = pd.DataFrame(result["data"],columns=fields)
-            result.pop("data", None)
-            data_validation.validation_all( fields, options, errors, data)
+                                        fields=FIELDS, errors=errors, values=values)
+            organize_form_data(values)
+            result = data_validation.data_assign(FIELDS, values)
+            data = pd.DataFrame(result["data"],columns=FIELDS)
             user_name = request.form["user_name"]
             action = request.form["action"]
             if action == "new_line":
@@ -309,11 +312,12 @@ def index():
                 if empty_check(new_data):
                     data.loc[len(data)] = new_data
                     data.at[len(data)-1,'sampleID'] = ''
+            data_validation.validation_all( FIELDS, OPTIONS, errors, data)
             data = add_no_col(data)
             return render_template('index_with_table.html', \
                     tables=[data.to_html(classes='data', header="true")], errors=errors, df=data, user_name=user_name)
     
-    return render_template('index.html', tables=[], fields=fields, errors=errors, values=values)
+    return render_template('index.html', tables=[], fields=FIELDS, errors=errors, values=values)
 
 if __name__ == '__main__':
     app.run(debug=True, host="0.0.0.0")
