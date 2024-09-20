@@ -1,66 +1,67 @@
 {% extends "layout.html" %}
 
 {% block content %}
-        <div class="container-fluid">
-            <div class="row no-gutters">
-                <div class="col-md-12 right-side d-flex flex-column">
-                    <!-- <div class="top-half">
-                       
-                        <form method="post" action="/" enctype="multipart/form-data" class="mt-3 csv-upload">
-                            <div class="form-group">
-                                <label for="file">Upload CSV File</label>
-                                <input type="file" class="form-control-file" id="file" name="file">
-                            </div>
-                            <button type="submit" class="btn btn-success w-25 h-25">Import file</button>
-                        </form>
-                    </div> -->
-                    <div class="bottom-half">
-                        <!-- Bottom half content here -->
-                        <form method="post">
-                            <div class="table-wrap">
-                                <table>
+<div class="container-fluid">
+    <div class="row no-gutters">
+        <div class="col-md-12 right-side d-flex flex-column">
+            <div class="bottom-half">
+                <!-- Bottom half content here -->
+                <form method="post">
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
                                 <tr>
                                     {% for col in df.columns %}
-                                        <th>{{ col }}</th>
+                                    <th>{{ col }}</th>
                                     {% endfor %}
                                 </tr>
+                            </thead>
+                            <tbody class="table-content">
                                 {% for row in range(df.shape[0]) %}
-                                    <tr>
-                                        {% for col in range(df.shape[1]) %}
-                                        {% if col == 0%}
-                                            <td>
-                                            <input type="hidden" name="{{ row }}_{{ col }}" value="{{ df.iloc[row, col] }}">
-                                            <div>{{ df.iloc[row, col] }}</div>
-                                            </td>
-                                        {% else %}
-                                            <td>
-                                                <input type="text" name="{{ row }}_{{ col }}" value="{{ df.iloc[row, col] }}">
-                                            </td>
-                                        {% endif %}
-                                        {% endfor %}
-                                    </tr>
+                                <tr id="{{row}}">
+                                    {% for col in range(df.shape[1]) %}
+                                    {% if col == 0 or col == 3%}
+                                    <td>
+                                        <input type="hidden" name="{{ row }}_{{ col }}" value="{{ df.iloc[row, col] }}">
+                                        <div>{{ df.iloc[row, col] }}</div>
+                                    </td>
+                                    {% elif col == 1%}
+                                    <td>
+                                        <div class="tooltip-container">
+                                            <input type="text" name="{{ row }}_{{ col }}" value="{{ df.iloc[row, col] }}" id="inputField">
+                                            <span class="tooltip-text">Add duplicate of this row as a new line to the table at the bottom</span>
+                                        </div>
+                                    </td>                                    
+                                    {% else %}
+                                    <td>
+                                        <input type="text" name="{{ row }}_{{ col }}" value="{{ df.iloc[row, col] }}">
+                                    </td>
+                                    {% endif %}
+                                    {% endfor %}
+                                </tr>
                                 {% endfor %}
-                                </table>
-                            </div>
-                            <div class="d-grid col-6 mx-auto"></div>
-                            <input type="submit" value="Add new line" formaction="/addLine">
-                                    <input type="submit" value="Save Changes" formaction="/change">
-                                </div>
-                                <div class="d-grid col-6 mx-auto">
-                                    <p>{{user_name}}</p>
-                                    <input type="hidden" name="user_name" value="{{user_name}}">
-                            {% if not errors.fatal_error%}
-                                    <button type="submit" formaction="/save">Save as csv</button>
-                                </div>
-                            {% endif %}
-                        <div class="result">            
-                            {{ errors.fatal_error}}
-                            {{ errors.warning}}
-                        </div>
-                        
-                        </form>
+                            </tbody>
+                        </table>
                     </div>
+                    <input type="submit" value="Add new line" formaction="/addLine">
+                    <input type="submit" value="Save Changes" formaction="/change">
+                    <span>User: {{user_name}}</span>
                 </div>
-            </div>
+                <input type="hidden" name="user_name" value="{{user_name}}">
+                {% if not errors.fatal_error%}
+                <button type="submit" formaction="/save" id="save_as_csv">Save as csv</button>
+            {% endif %}
+            </form>
         </div>
+    </div>
+    <div class="result">
+        {% for e in errors.fatal_error %}
+        <div class="error-message" data-row="{{e[0]}}">
+            row:{{ e[0] }}, {{ e[1] }} :{{ e[2] }}
+        </div>
+        {% endfor %}
+        <div>Warning: {{ errors.warning[0]}}</div>
+    </div>
+</div>
+<script src="../static/index_with_table.js"></script>
 {% endblock %}

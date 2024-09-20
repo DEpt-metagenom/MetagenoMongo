@@ -1,28 +1,24 @@
-function deleteRow(button) {
-  var row = button.parentNode.parentNode;
-  row.parentNode.removeChild(row);
+function setupButton(selector, type, value, color = null, onClick = null) {
+  document.querySelectorAll(selector).forEach(elm => {
+    elm.type = type;
+    elm.value = value;
+    if (color) {
+      elm.style.color = color;
+    }
+    if (onClick) {
+      elm.setAttribute('onclick', onClick);
+    }
+  });
 }
 
+
 window.addEventListener('load', function () {
-	// index_with_table
-    document.querySelectorAll('input[name$="86"]').forEach(elm => {
-		elm.type = "button"
-    elm.value = "X"
-    elm.style.color="red"
-    elm.setAttribute('onclick', 'deleteRow(this)');
-	});
-    document.querySelectorAll('input[name$="87"]').forEach(elm => {
-		elm.type = "button"
-    elm.value ="Dupl"
-	});
-    // index.html
-    document.querySelectorAll('input[name="Delete"]').forEach(elm => {
-		elm.type = "button"
-    elm.value = "X"
-    elm.style.color="red"
-	});
-    document.querySelectorAll('input[name="Duplicate"]').forEach(elm => {
-		elm.type = "button"
-    elm.value ="Dupl"
-	});
+  setupButton('input[name="Delete"]', 'button', 'X', 'red');
+  setupButton('input[name="Duplicate"]', 'button', 'Dupl');
+  const user_name1 = document.getElementById('user_name1');
+  const user_name2 = document.getElementById('user_name2');
+  user_name1.addEventListener('input', function() {
+    const inputValue = user_name1.value;
+    user_name2.value = inputValue;
+  })
 });

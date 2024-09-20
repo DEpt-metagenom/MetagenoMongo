@@ -24,12 +24,12 @@ app.secret_key = os.urandom(10)
 # Future developers should revisit this decision if the application's requirements change.
 UPLOAD_FOLDER = 'uploads'
 ALLOWED_EXTENSIONS = {'csv', 'xlsx'}
-
+FIELDS_PER_ENTRY = 88 # the number of data columns. 
 
 # --please comment out this part if you run the app on your labtop--
-# if os.getenv('META_REMOTE_PATH') is None or os.getenv('META_KEY_PATH') is None:
-#     current_app.logger.error("META_REMOTE_PATH or META_KEY_PATH is missing.")
-#     raise EnvironmentError("Required environment variables are not set.")
+if os.getenv('META_REMOTE_PATH') is None or os.getenv('META_KEY_PATH') is None:
+    current_app.logger.error("META_REMOTE_PATH or META_KEY_PATH is missing.")
+    raise EnvironmentError("Required environment variables are not set.")
 # --
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -38,10 +38,17 @@ script_dir = os.path.dirname(os.path.abspath(__file__))
 headers_file = os.path.join(script_dir, '.metagenomongo.csv')
 options = load.load_options(headers_file)
 fields = list(options.keys())
+fields_with_no = fields[:]
+fields_with_no.insert(0,'No')
 
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[-1].lower() in ALLOWED_EXTENSIONS
+
+def add_no_col(data):
+    data['No'] = range(1, len(data.index) + 1)
+    data = data.reindex(columns=fields_with_no, fill_value='')
+    return data
 
 def check_user(user_name):
     user_hashes = {'095c5883d62a373f59fe8934eacf70cab54e8c6b1f40889853410633fa70af10a6a008f46f974ca36ca6ab32d9a17408ea05b82075c30f7ee76c075989e64651',
@@ -86,10 +93,11 @@ def parse_form_data(form_data):
     data_list = []
     tmp = []
     for key, value in form_data.items():
+        if "_0" in key: # Skip No column
+            tmp.extend(["", ""])# Add empty strings for 'delete' and 'duplicate'
+            continue
         tmp.append(value)
-        if "85" in key:
-            tmp.append("") # value for the delete column
-            tmp.append("") # value for the duplicate column
+        if str(FIELDS_PER_ENTRY) in key:
             data_list.append(tmp)
             tmp = []
     return data_list
@@ -116,26 +124,44 @@ def save_file_server(output_value,file_name,errors):
         scp_command = ['scp', '-i', key_path, filepath, remote_path]
         subprocess.run(scp_command, check=True)
         email.send_email(file_name, remote_path) 
-        print(f"File successfully transferred to {remote_path}")
+        logging.info(f"File successfully transferred to {remote_path}")
     except subprocess.CalledProcessError as e:
-        print(f"An error occurred: {e}")
-        print("Run in the root directory on the gpu2")
+        logging.error(f"An error occurred: {e}")
+        logging.info("Run in the app root directory on the gpu2")
     finally:
         os.remove(filepath)
 
 def empty_check(last_data):
-    for n in last_data:
+    for n in last_data:     
         if n != "":
             return True
     return False
 
-def data_list_check(data_list, errors, data):
-    if not data_list: # data is empty
-        errors["fatal_error"] = "No Data"
-        return render_template('index_with_table.html', \
-            tables=[data.to_html(classes='data', header="true")], \
-            errors=errors, \
-            df=data, user_name=request.form["user_name"])
+def custom_date_parser(x):
+    if len(x) == 4:
+        return pd.to_datetime(x, format='%Y').date()
+    elif len(x) == 7:
+        return pd.to_datetime(x, format='%Y-%m').date()
+    else:
+        return pd.to_datetime(x).date()
+
+def handle_empty_data(data_list, data, errors, user_name):
+    for l in data_list:
+        for df in l:
+            if df != "":
+                return None
+    errors["warning"].append("No Data")
+    data = add_no_col(data)
+    return render_template('index_with_table.html',
+            tables=[data.to_html(classes='data', header="true")],
+            errors=errors,
+            df=data, user_name=user_name)
+
+def prepare_data_for_display(data):
+    display_data = data.copy()
+    display_data['Delete'] = ''
+    display_data['Duplicate'] = ''
+    return display_data
 
 @app.route('/change', methods=['POST'])
 def change():
@@ -144,6 +170,7 @@ def change():
     email.email_env_check(errors)
     data = pd.DataFrame(data_list, columns=fields)
     data_validation.validation_all( fields, options, errors, data)
+    data = add_no_col(data)
     return render_template('index_with_table.html', \
                 tables=[data.to_html(classes='data', header="true")], \
                 errors=errors, \
@@ -155,17 +182,15 @@ def addLine():
     errors = defaultdict(list)
     email.email_env_check(errors)
     data = pd.DataFrame(data_list, columns=fields)
-    if not data_list: # no rows
-        errors["fatal_error"] = "No Data"
-        return render_template('index_with_table.html', \
-            tables=[data.to_html(classes='data', header="true")], \
-            errors=errors, \
-            df=data, user_name=request.form["user_name"])
+    empty_response = handle_empty_data(data_list, data, errors, request.form["user_name"])
+    if empty_response:
+        return empty_response
     data_validation.validation_all( fields, options, errors, data)
     new_data = data.iloc[-1]
     if empty_check(new_data):
         data.loc[len(data)] = new_data
         data.at[len(data)-1,'sampleID'] = ''
+    data = add_no_col(data)
     return render_template('index_with_table.html', \
                 tables=[data.to_html(classes='data', header="true")], \
                 errors=errors, \
@@ -178,14 +203,16 @@ def save():
     errors = defaultdict(list)
     email.email_env_check(errors)
     data = pd.DataFrame(data_list, columns=fields)
+    data_validation.validation_all( fields, options, errors, data)
     data = data.drop(columns=['Delete', 'Duplicate'])
     data = data.loc[:, ~data.columns.str.contains('^Unnamed')]
-    data_validation.validation_all( fields, options, errors, data)
     if errors['fatal_error']:
+        display_data = prepare_data_for_display(data)
+        display_data = add_no_col(display_data)
         return render_template('index_with_table.html', \
             tables=[data.to_html(classes='data', header="true")], \
             errors=errors, \
-            df=data, user_name=request.form["user_name"])
+            df=display_data, user_name=request.form["user_name"])
     output = io.StringIO()
     data.to_csv(output, index=False)
     mem = io.BytesIO()
@@ -199,7 +226,6 @@ def save():
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
-    # row, column_name, error type
     data = pd.DataFrame()
     errors = defaultdict(list)
     email.email_env_check(errors)
@@ -223,26 +249,27 @@ def index():
                     errors['fatal_error'].append('Please run it in the MetagenoMongo.')
                     return render_template('index_with_table.html', \
                     tables=[data.to_html(classes='data', header="true")], errors=errors, df=data)
-                _, ext = os.path.splitext(file.filename)
+                file_name, ext = os.path.splitext(file.filename)
+                # file_name, ext = os.path.splitext(file_name)
                 if ext == '.csv':
-                    df_temp = pd.read_csv(filepath, dtype=str)  # Load as strings
+                    data = pd.read_csv(filepath, dtype=str, parse_dates=['collection_date', 'run_date'], date_format=custom_date_parser)  # Load as strings
                 elif ext == '.xlsx':
-                    df_temp = pd.read_excel(filepath, dtype=str)  # Load as strings
+                    data = pd.read_excel(filepath, dtype=str, parse_dates=['collection_date', 'run_date'], date_format=custom_date_parser)
                 else:
                     os.remove(filepath)
                     errors['fatal_error'].append('Invalid file type')
                     return render_template('index_with_table.html', \
                     tables=[data.to_html(classes='data', header="true")], errors=errors, df=data)
                 # Strip whitespace from headers
-                df_temp.columns = df_temp.columns.str.strip()
+                data.columns = data.columns.str.strip()
                 # Strip whitespace from data
-                df_temp = df_temp.applymap(lambda x: x.strip() if isinstance(x, str) else x)
+                data = data.applymap(lambda x: x.strip() if isinstance(x, str) else x)
                 # Replace NaN with empty strings
-                df_temp = df_temp.fillna('')
+                data = data.fillna('')
                 # Remove fully empty rows
-                df_temp = df_temp[~(df_temp == '').all(axis=1)]
+                data = data[~(data == '').all(axis=1)]
                 # Get actual headers from the temporary DataFrame
-                imported_fields = list(df_temp.columns)
+                imported_fields = list(data.columns)
                 # Identify headers in the input file that do not appear in the expected headers
                 incorrect_fields = [header for header in imported_fields if header not in fields]
                 if incorrect_fields:
@@ -252,18 +279,23 @@ def index():
                     fields=fields, values=values, errors=errors)
                 else:
                     # No incorrect headers, just update the table
-                    df_temp = df_temp.reindex(columns=fields, fill_value='')
+                    data = data.reindex(columns=fields, fill_value='')
                     data_validation.validation_all(fields,\
-                                    options, errors, df_temp)  
+                                    options, errors, data)  
+                data = add_no_col(data)
                 os.remove(filepath)
                 return render_template('index_with_table.html', \
-                    tables=[df_temp.to_html(classes='data', header="true")], \
-                    errors=errors, df=df_temp, user_name=user_name)
+                    tables=[data.to_html(classes='data', header="true")], \
+                    errors=errors, df=data, user_name=user_name)
         # Handle manual data entry
         if request.form:
             values = MultiDict(request.form)
-            values.popitem()
-            values.popitem()
+            if len(values) == 1: # importing file is not selected
+                errors['fatal_error'].append('Choose an importing file.')
+                return render_template('index.html', tables=[],\
+                                        fields=fields, errors=errors, values=values)
+            values.popitem() # remove user_name
+            values.popitem() # remove action
             values["Delete"] = ""
             values["Duplicate"] = ""
             result = data_validation.data_assign(fields, values)
@@ -272,18 +304,16 @@ def index():
             data_validation.validation_all( fields, options, errors, data)
             user_name = request.form["user_name"]
             action = request.form["action"]
-            # this part causes bugs when add 'Delete' and 'Duplicate' columuns
             if action == "new_line":
                 new_data = data.iloc[-1]
                 if empty_check(new_data):
                     data.loc[len(data)] = new_data
                     data.at[len(data)-1,'sampleID'] = ''
-                else:
-                    errors['fatal_error'].append('No data available.')
+            data = add_no_col(data)
             return render_template('index_with_table.html', \
                     tables=[data.to_html(classes='data', header="true")], errors=errors, df=data, user_name=user_name)
     
     return render_template('index.html', tables=[], fields=fields, errors=errors, values=values)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host="0.0.0.0")

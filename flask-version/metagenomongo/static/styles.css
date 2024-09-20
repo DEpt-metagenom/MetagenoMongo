@@ -1,97 +1,44 @@
+html{
+    height: 100%;
+}
 body {
     font-family: 'Arial', sans-serif;
     background-color: #f8f9fa;
     color: #333;
-    line-height: 1.6;
     margin: 0;
     padding: 0;
+    height: 100%;
+    overflow: hidden;
+}
+h1{
+    margin-bottom: 0px;
 }
 
 .container {
-    width: 90%;
-    max-width: 1200px;
+    width: 95%;
     margin: 0 auto;
-    padding: 20px;
-}
-
-header {
-    background-color: #007bff;
-    color: white;
-    padding: 20px 0;
-}
-
-h1 {
-    margin: 0;
-    font-size: 2.5em;
-}
-
-h1 strong {
-    font-weight: 700;
-}
-
-h2 {
-    color: #007bff;
-    margin-top: 30px;
-    margin-bottom: 20px;
-}
-
-.upload-section, .results-section {
-    background-color: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    padding: 30px;
-    margin-bottom: 30px;
-}
-
-.upload-form {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
+    padding-top: 7px;
 }
 
 input[type="file"] {
     border: 2px dashed #007bff;
-    padding: 20px;
+    padding: 15px;
     border-radius: 8px;
     text-align: center;
+    width: 30%;
     cursor: pointer;
-}
-
-.btn {
-    padding: 12px 24px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 16px;
-    transition: background-color 0.3s ease;
-}
-
-.btn-primary {
-    background-color: #007bff;
-    color: white;
-}
-
-.btn-primary:hover {
-    background-color: #0056b3;
-}
-
-.btn-secondary {
-    background-color: #6c757d;
-    color: white;
-}
-
-.btn-secondary:hover {
-    background-color: #545b62;
 }
 
 .scrollable-section {
-    max-height: 500px;
+    max-height: 400px;
     overflow-y: auto;
     border: 1px solid #dee2e6;
     border-radius: 4px;
 }
 .table-wrap {
     overflow-x: scroll;
+    max-height: 350px;
+    margin-bottom: 5px;
 }
 
 table {
@@ -101,7 +48,7 @@ table {
 }
 
 th, td {
-    padding: 12px 15px;
+    padding: 6px 8px;
     text-align: left;
     border-bottom: 1px solid #dee2e6;
 }
@@ -135,4 +82,48 @@ tr:hover {
 
 .form-label {
     display: block;
+}
+
+.result {
+    max-height: 140px;
+    overflow-y: auto;
+    margin-top: 5px;
+}
+span{
+    color: #007bff;
+}
+.disabled{
+    color: gainsboro;
+}
+.tooltip-container {
+    position: relative;
+    display: inline-block;
+}
+
+.tooltip-text {
+    visibility: hidden;
+    width: 250px;
+    background-color: black;
+    color: #fff;
+    text-align: center;
+    border-radius: 5px;
+    padding: 3px;
+    position: absolute;
+    z-index: 1;
+    top: 50%;
+    left: 105%; /* 右に表示 */
+    transform: translateY(-50%);
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.tooltip-container:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+}
+#save_as_csv{
+    width: 150px;
+    display: block;
+    margin: auto;
+    color: #007bff;
 }
