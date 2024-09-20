@@ -157,12 +157,6 @@ def handle_empty_data(data_list, data, errors, user_name):
             errors=errors,
             df=data, user_name=user_name)
 
-def prepare_data_for_display(data):
-    display_data = data.copy()
-    display_data['Delete'] = ''
-    display_data['Duplicate'] = ''
-    return display_data
-
 #remove user_name and action
 #add Delete and Duplicate
 def organize_form_data(values):
@@ -250,12 +244,12 @@ def save():
     data = data.drop(columns=['Delete', 'Duplicate'])
     data = data.loc[:, ~data.columns.str.contains('^Unnamed')]
     if errors['fatal_error']:
-        display_data = prepare_data_for_display(data)
-        display_data = add_no_col(display_data)
+        data['Delete'] = ''
+        data['Duplicate'] = ''
+        data = add_no_col(data)
         return render_template('index_with_table.html', \
-            tables=[data.to_html(classes='data', header="true")], \
-            errors=errors, \
-            df=display_data, user_name=request.form["user_name"])
+            tables=[data.to_html(classes='data', header="true")], errors=errors, \
+            df=data, user_name=request.form["user_name"])
     output = io.StringIO()
     data.to_csv(output, index=False)
     mem = io.BytesIO()
