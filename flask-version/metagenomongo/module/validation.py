@@ -1,14 +1,12 @@
 import re
-from datetime import datetime
 from collections import Counter
 
 DATE_FIELDS = ["collection_date", "run_date"]
 MANDATORY_COLUMNS = ("projectID", "project_directory", "sampleID")
 COLUMNS_WITH_DISALLOWED_SPECIAL_CHARACTERS = ("projectID", "project_directory", "sampleID", "run_directory")
-# accepted formats are YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS.fffZ
+
 DATE_PATTERN = re.compile(r'^\d{4}(-\d{2}(-\d{2}(T\d{2}:\d{2}:\d{2}\.\d{3}Z)?)?)?$')
-# disallow special characters without - and _
-DISALLOW_SPECIAL_CHARACTERS = re.compile(r'[^a-zA-Z0-9-_]')
+SPECIAL_CHAR_PATTERN = re.compile(r'[^a-zA-Z0-9-_]')
 
 def data_assign(fields, values):
     # Retrieve input values
@@ -19,9 +17,6 @@ def data_assign(fields, values):
     result["data"][0].pop() # Duplicate
     result["data"][0].pop() # Delete
     return result
-
-def contains_special_characters(s):
-    return bool(DISALLOW_SPECIAL_CHARACTERS.search(s))
 
 def create_data_type_set(data_type, fields, options):
     return {field for field in fields if data_type == options[field]['datatype']}
@@ -69,33 +64,31 @@ def validation_all(fields, options, errors, df_temp):
                         continue
                     elif not DATE_PATTERN.match(cell):
                         error_list.append([row_index, field, "Invalid value. Expected data type: date"])
-                if field in options and options[field]['combobox_type'] == 'fix' and options[field]['options']:
-                    if cell not in options[field]['options']:
-                        error_list.append([row_index, field, f"Invalid value. Possible values are: '{options[field]['options']}'"])
-                if field in int_dynamic_type:
-                    if cell != "":
-                        if not cell.isdigit():
+                if (field in options and options[field]['combobox_type'] == 'fix' and options[field]['options']
+                    and cell not in options[field]['options']):
+                    error_list.append([row_index, field, f"Invalid value. Possible values are: '{options[field]['options']}'"])
+                if (field in int_dynamic_type
+                    and cell != ""
+                    and not cell.isdigit()):
                             error_list.append([row_index, field, "Invalid value. Expected data type: int"])
-                elif field in float_dynamic_type:
-                    if cell != "":
-                        try:
-                            float(cell)
-                        except ValueError:
-                            error_list.append([row_index, field, "Invalid value. Expected data type: float"])
+                elif (field in float_dynamic_type
+                      and cell != ""):
+                    try:
+                        float(cell)
+                    except ValueError:
+                        error_list.append([row_index, field, "Invalid value. Expected data type: float"])
                 if field == "run_directory" and sampleID != "":
                     run_directory = cell
                 elif field == "barcode" and sampleID != "":
                     barcode = cell
                 elif field in MANDATORY_COLUMNS and cell == "":
                     error_list.append([row_index, field, f"{field} is necessary"])
-                elif field in COLUMNS_WITH_DISALLOWED_SPECIAL_CHARACTERS:
-                    if contains_special_characters(cell):
-                        error_list.append([row_index, field, f"{field}\
-                            Only alphanumeric characters, hyphens, and underscores are allowed."])
-                if field == "sampleID":
-                    sampleID = cell
-                    if sampleID != "":
-                        sampleID_list.append(sampleID)
+                elif (field in COLUMNS_WITH_DISALLOWED_SPECIAL_CHARACTERS
+                      and SPECIAL_CHAR_PATTERN.search(cell)):
+                    error_list.append([row_index, field, f"{field}\
+                        Only alphanumeric characters, hyphens, and underscores are allowed."])
+                if field == "sampleID" and cell != "":
+                    sampleID_list.append(sampleID)
                     
         if sampleID != "":
             data_id = f"{sampleID}{run_directory}{barcode}"
@@ -122,5 +115,5 @@ def validation_all(fields, options, errors, df_temp):
                             error_list.append([row_index, field, "Barcode is necessary"])
                         barcode = cell
             if f"{sampleID}{run_directory}{barcode}" in duplicate_sampleID_rundirectory_barcodes:
-                error_list.append([row_index, field, "Each pair of sampleID,rundirectory,barcode must be unique"])
+                error_list.append([row_index, field, "Each combination of sampleID+rundirectory+barcode must be unique"])
     errors['fatal_error'] = error_list
