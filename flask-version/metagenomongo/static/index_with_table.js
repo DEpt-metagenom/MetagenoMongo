@@ -2,6 +2,7 @@ function deleteRow(button) {
   var row = button.parentNode.parentNode;
   row.parentNode.removeChild(row);
 }
+
 function duplicateRow(button) {
   var row = button.parentNode.parentNode.parentNode;
   var cloneRow = row.cloneNode(true);
@@ -40,6 +41,23 @@ function setupButton(selector, type, value, color = null, onClick = null) {
   });
 }
 
+function addScrollToErrorMessages(){
+  const errorMessages = document.querySelectorAll(".error-message");
+  errorMessages.forEach(function (message) {
+    message.addEventListener("click", function () {
+      const rowId = this.getAttribute("data-row");
+      const targetRow = document.getElementById(rowId);
+      if (targetRow) {
+        targetRow.scrollIntoView({ behavior: "auto", block: "center" });
+        targetRow.style.backgroundColor = "yellow";
+        setTimeout(function () {
+          targetRow.style.backgroundColor = "";
+        }, 3000);
+      }
+    });
+  });
+}
+
 window.addEventListener("load", function () {
   setupButton('input[name$="_2"]', "button", "X", "red", "deleteRow(this)");
   const id = document.querySelector('input[name$="_3"]');
@@ -55,18 +73,5 @@ window.addEventListener("load", function () {
       "duplicateRow(this)"
     );
   }
-  const errorMessages = document.querySelectorAll(".error-message");
-  errorMessages.forEach(function (message) {
-    message.addEventListener("click", function () {
-      const rowId = this.getAttribute("data-row");
-      const targetRow = document.getElementById(rowId);
-      if (targetRow) {
-        targetRow.scrollIntoView({ behavior: "auto", block: "center" });
-        targetRow.style.backgroundColor = "yellow";
-        setTimeout(function () {
-          targetRow.style.backgroundColor = "";
-        }, 3000);
-      }
-    });
-  });
+  addScrollToErrorMessages();
 });
