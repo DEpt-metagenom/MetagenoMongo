@@ -5,8 +5,11 @@ from collections import Counter
 DATE_FIELDS = ["collection_date", "run_date"]
 MANDATORY_COLUMNS = ("projectID", "project_directory", "sampleID")
 COLUMNS_WITH_DISALLOWED_SPECIAL_CHARACTERS = ("projectID", "project_directory", "sampleID", "run_directory")
-date_pattern = re.compile(r'^\d{4}(-\d{2}(-\d{2}(T\d{2}:\d{2}:\d{2}\.\d{3}Z)?)?)?$')
 # accepted formats are YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS.fffZ
+DATE_PATTERN = re.compile(r'^\d{4}(-\d{2}(-\d{2}(T\d{2}:\d{2}:\d{2}\.\d{3}Z)?)?)?$')
+# disallow special characters without - and _
+DISALLOW_SPECIAL_CHARACTERS = re.compile(r'[^a-zA-Z0-9-_]')
+
 def data_assign(fields, values):
     # Retrieve input values
     result = {}
@@ -18,8 +21,7 @@ def data_assign(fields, values):
     return result
 
 def contains_special_characters(s):
-    pattern = re.compile(r'[^a-zA-Z0-9-_]')
-    return bool(pattern.search(s))
+    return bool(DISALLOW_SPECIAL_CHARACTERS.search(s))
 
 def create_data_type_set(data_type, fields, options):
     return {field for field in fields if data_type == options[field]['datatype']}
@@ -65,7 +67,7 @@ def validation_all(fields, options, errors, df_temp):
                 if field in DATE_FIELDS:
                     if field == "run_date" and cell == "":
                         continue
-                    elif not date_pattern.match(cell):
+                    elif not DATE_PATTERN.match(cell):
                         error_list.append([row_index, field, "Invalid value. Expected data type: date"])
                 if field in options and options[field]['combobox_type'] == 'fix' and options[field]['options']:
                     if cell not in options[field]['options']:
