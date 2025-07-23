@@ -6,7 +6,7 @@ specimenID,str,,dynamic
 isolation_source,str,,dynamic
 source_type,str,"Human,Animal,Food,Environmental,Other,Missing,Not applicable,Not collected,Not provided,",fix
 species,str,,dynamic
-sex,str,"male,female,non,",fix
+sex,str,"male,female,non,U,",fix
 host,str,,dynamic
 mother,str,,dynamic
 collection_date,date,,dynamic
@@ -85,3 +85,6 @@ TEIMIC,float,,dynamic
 VAMIC,float,,dynamic
 ATM,int,,dynamic
 FFC,int,,dynamic
+Generation,str,,dynamic
+GPS_latitude,str,,dynamic
+GPS_longitude,str,,dynamic
