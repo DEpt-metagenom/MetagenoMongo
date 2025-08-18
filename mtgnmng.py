@@ -291,6 +291,7 @@ while True:
         corrected_items = []
         invalid_date_messages = []
         invalid_combobox_messages = []
+        slash_warnings = []
 
         # Apply corrections to data
         for row_index, row in enumerate(data):
@@ -335,6 +336,11 @@ while True:
                         if cell not in options[header]['options']:
                             invalid_combobox_messages.append(f"Invalid fixed option in row {row_index + 1}, column '{header}': '{cell}'")
 
+                    if "/" in cell:
+                        slash_warnings.append(
+                            f"Warning: '/' found in row {row_index + 1}, column '{header}': '{cell}'"
+                        )
+
         # Remove rows that are entirely empty
         data = [row for row in data if any(cell.strip() for cell in row)]
         
@@ -345,10 +351,13 @@ while True:
         result_text = (f'Corrected rows: {corrected_count}\n'
                     f'Number of cells with invalid date: {len(invalid_date_messages)}\n'
                     f'Number of cells with invalid fixed data options: {len(invalid_combobox_messages)}\n'
+                    f'Number of cells containing "/": {len(slash_warnings)}\n'   # <-- NEW line
                     '---\n')
         
         # Add detailed errors
-        detailed_errors = '\n'.join(invalid_date_messages + invalid_combobox_messages)
+        detailed_errors = '\n'.join(
+            invalid_date_messages + invalid_combobox_messages + slash_warnings
+        )
         result_text += detailed_errors
 
         layout = [
